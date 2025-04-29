@@ -20,7 +20,7 @@ document.body.appendChild(renderer.domElement);
 
 // Environment map
 const cubeTextureLoader = new THREE.CubeTextureLoader();
-cubeTextureLoader.setPath('/');
+cubeTextureLoader.setPath('/sunsetEnv/');
 const environmentMap = cubeTextureLoader.loadAsync([
   'px.png', // positive x
   'nx.png', // negative x 

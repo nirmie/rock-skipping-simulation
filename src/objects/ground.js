@@ -25,9 +25,10 @@ export default class Ground extends THREE.Mesh {
             fragmentShader: fragmentShader,
             // side: THREE.DoubleSide,
         });
-        this.geometry = new THREE.PlaneGeometry(2, 2, 512, 512);
+        this.geometry = new THREE.PlaneGeometry(2, 10, 512, 512);
         this.rotation.x = -Math.PI / 2;
         this.position.y = -0.2;
+        this.position.z= 5;
     }
 
     update(time) {

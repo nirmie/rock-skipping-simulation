@@ -36,8 +36,9 @@ export default class Water extends THREE.Mesh {
             side: THREE.DoubleSide,
             // wireframe: true,
         });
-        this.geometry = new THREE.PlaneGeometry(2, 2, options.resolution, options.resolution);
+        this.geometry = new THREE.PlaneGeometry(2, 10, options.resolution, options.resolution);
         this.rotation.x = -Math.PI / 2;
+        this.position.z= 5;
     }
 
     update(time) {
