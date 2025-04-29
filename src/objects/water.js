@@ -28,6 +28,14 @@ export default class Water extends THREE.Mesh {
 
                 uFresnelStrength: { value: 0.8 },
                 uFresnelPower: { value: 0.5 },
+
+                // ---  Ripple Uniforms ---
+                uLastClickTime: { value: -Infinity },
+                uLastClickPosition: { value: new THREE.Vector2() }, // XZ position
+                uRippleSpeed: { value: 2.0 },
+                uRippleFrequency: { value: 15.0 },
+                uRippleAmplitude: { value: 0.05 },
+                uRippleDecay: { value: 3.0 } // How quickly the ripple fades with distance
                 
             },
             vertexShader: vertexShader,

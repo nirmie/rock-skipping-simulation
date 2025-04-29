@@ -18,6 +18,12 @@ renderer.toneMapping = THREE.NeutralToneMapping;
 renderer.toneMappingExposure = 1.5;
 document.body.appendChild(renderer.domElement);
 
+// --- Raycasting Setup ---
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let lastClickTime = -Infinity; // Initialize to a very old time
+let lastClickPosition = new THREE.Vector2(); // Initialize
+
 // Environment map
 const cubeTextureLoader = new THREE.CubeTextureLoader();
 cubeTextureLoader.setPath('/sunsetEnv/');
@@ -63,6 +69,11 @@ scene.add(ground);
 function animate() {
   const elapsedTime = clock.getElapsedTime();
   controls.update();
+
+  // Pass click data to water shader
+  water.material.uniforms.uLastClickTime.value = lastClickTime;
+  water.material.uniforms.uLastClickPosition.value.copy(lastClickPosition); // Use copy for Vector2
+
   water.update(elapsedTime);
   ground.update(elapsedTime);
   renderer.render(scene, camera);
@@ -74,6 +85,26 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+window.addEventListener('pointerdown', (event) => {
+  // Calculate pointer position in normalized device coordinates (-1 to +1)
+  pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  // Update the picking ray with the camera and pointer position
+  raycaster.setFromCamera(pointer, camera);
+
+  // Calculate objects intersecting the picking ray
+  const intersects = raycaster.intersectObject(water); // Check only against water
+
+  if (intersects.length > 0) {
+      const intersectionPoint = intersects[0].point;
+      // Store the XZ coordinates and the time of the click
+      lastClickPosition.set(intersectionPoint.x, intersectionPoint.z);
+      lastClickTime = clock.getElapsedTime();
+      console.log('Clicked water at:', intersectionPoint.x, intersectionPoint.z, 'Time:', lastClickTime);
+  }
 });
 
 animate();

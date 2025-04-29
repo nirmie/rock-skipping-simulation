@@ -1,130 +1,184 @@
-import { Pane } from 'tweakpane';
-import * as THREE from 'three';
+import { Pane } from "tweakpane";
+import * as THREE from "three";
 
 export function setupUI({ waterResolution, water, ground }) {
   const pane = new Pane();
 
   // Water parameters folder
-  const waterFolder = pane.addFolder({ title: 'Water' });
+  const waterFolder = pane.addFolder({ title: "Water" });
 
-//   const geometryFolder = waterFolder.addFolder({ title: 'Geometry' });
+  //   const geometryFolder = waterFolder.addFolder({ title: 'Geometry' });
 
-//   geometryFolder.addBinding(waterResolution, 'size', { min: 2, max: 1024, step: 2, label: 'Resolution' }).on('change', ({ value }) => {
-//     console.log(value);
-//     // Update geometry with new dimensions
-//     const newGeometry = new THREE.PlaneGeometry(
-//       2,
-//       2,
-//       waterResolution.size,
-//       waterResolution.size
-//     );
-//     water.geometry.dispose();
-//     water.geometry = newGeometry;
-//   });
+  //   geometryFolder.addBinding(waterResolution, 'size', { min: 2, max: 1024, step: 2, label: 'Resolution' }).on('change', ({ value }) => {
+  //     console.log(value);
+  //     // Update geometry with new dimensions
+  //     const newGeometry = new THREE.PlaneGeometry(
+  //       2,
+  //       2,
+  //       waterResolution.size,
+  //       waterResolution.size
+  //     );
+  //     water.geometry.dispose();
+  //     water.geometry = newGeometry;
+  //   });
 
   // Waves
-  const wavesFolder = waterFolder.addFolder({ title: 'Waves' });
-  wavesFolder.addBinding(water.material.uniforms.uWavesAmplitude, 'value', {
-    min: 0, max: 0.1, label: 'Amplitude'
+  const wavesFolder = waterFolder.addFolder({ title: "Waves" });
+  wavesFolder.addBinding(water.material.uniforms.uWavesAmplitude, "value", {
+    min: 0,
+    max: 0.1,
+    label: "Amplitude",
   });
-  wavesFolder.addBinding(water.material.uniforms.uWavesFrequency, 'value', {
-    min: 0.1, max: 10, label: 'Frequency'
+  wavesFolder.addBinding(water.material.uniforms.uWavesFrequency, "value", {
+    min: 0.1,
+    max: 10,
+    label: "Frequency",
   });
-  wavesFolder.addBinding(water.material.uniforms.uWavesPersistence, 'value', {
-    min: 0, max: 1, label: 'Persistence'
+  wavesFolder.addBinding(water.material.uniforms.uWavesPersistence, "value", {
+    min: 0,
+    max: 1,
+    label: "Persistence",
   });
-  wavesFolder.addBinding(water.material.uniforms.uWavesLacunarity, 'value', {
-    min: 0, max: 3, label: 'Lacunarity'
+  wavesFolder.addBinding(water.material.uniforms.uWavesLacunarity, "value", {
+    min: 0,
+    max: 3,
+    label: "Lacunarity",
   });
-  wavesFolder.addBinding(water.material.uniforms.uWavesIterations, 'value', {
-    min: 1, max: 10, step: 1, label: 'Iterations'
+  wavesFolder.addBinding(water.material.uniforms.uWavesIterations, "value", {
+    min: 1,
+    max: 10,
+    step: 1,
+    label: "Iterations",
   });
-  wavesFolder.addBinding(water.material.uniforms.uWavesSpeed, 'value', {
-    min: 0, max: 1, label: 'Speed'
+  wavesFolder.addBinding(water.material.uniforms.uWavesSpeed, "value", {
+    min: 0,
+    max: 1,
+    label: "Speed",
   });
 
   // Color
-  const colorFolder = waterFolder.addFolder({ title: 'Color' });
+  const colorFolder = waterFolder.addFolder({ title: "Color" });
 
-  colorFolder.addBinding(water.material.uniforms.uOpacity, 'value', {
-    min: 0, max: 1, step: 0.01, label: 'Opacity'
+  colorFolder.addBinding(water.material.uniforms.uOpacity, "value", {
+    min: 0,
+    max: 1,
+    step: 0.01,
+    label: "Opacity",
   });
 
-  colorFolder.addBinding(water.material.uniforms.uTroughColor, 'value', {
-    label: 'Trough Color', view: 'color', color: { type: 'float' }
+  colorFolder.addBinding(water.material.uniforms.uTroughColor, "value", {
+    label: "Trough Color",
+    view: "color",
+    color: { type: "float" },
   });
-  colorFolder.addBinding(water.material.uniforms.uSurfaceColor, 'value', {
-    label: 'Surface Color', view: 'color', color: { type: 'float' }
+  colorFolder.addBinding(water.material.uniforms.uSurfaceColor, "value", {
+    label: "Surface Color",
+    view: "color",
+    color: { type: "float" },
   });
-  colorFolder.addBinding(water.material.uniforms.uCrestColor, 'value', {
-    label: 'Peak Color',
-    view: 'color',
-    color: { type: 'float' }
+  colorFolder.addBinding(water.material.uniforms.uCrestColor, "value", {
+    label: "Peak Color",
+    view: "color",
+    color: { type: "float" },
   });
-  colorFolder.addBinding(water.material.uniforms.uCrestThreshold, 'value', {
+  colorFolder.addBinding(water.material.uniforms.uCrestThreshold, "value", {
     min: 0,
     max: 0.5,
-    label: 'Peak Threshold'
+    label: "Peak Threshold",
   });
-  colorFolder.addBinding(water.material.uniforms.uCrestTransition, 'value', {
+  colorFolder.addBinding(water.material.uniforms.uCrestTransition, "value", {
     min: 0,
     max: 0.5,
-    label: 'Peak Transition'
+    label: "Peak Transition",
   });
-  colorFolder.addBinding(water.material.uniforms.uTroughThreshold, 'value', {
+  colorFolder.addBinding(water.material.uniforms.uTroughThreshold, "value", {
     min: -0.5,
     max: 0,
-    label: 'Trough Threshold'
+    label: "Trough Threshold",
   });
-  colorFolder.addBinding(water.material.uniforms.uTroughTransition, 'value', {
+  colorFolder.addBinding(water.material.uniforms.uTroughTransition, "value", {
     min: 0,
     max: 0.5,
-    label: 'Trough Transition'
+    label: "Trough Transition",
   });
 
   // Fresnel
-  const fresnelFolder = waterFolder.addFolder({ title: 'Fresnel' });
-  fresnelFolder.addBinding(water.material.uniforms.uFresnelStrength, 'value', {
+  const fresnelFolder = waterFolder.addFolder({ title: "Fresnel" });
+  fresnelFolder.addBinding(water.material.uniforms.uFresnelStrength, "value", {
     min: 0,
     max: 1,
-    label: 'Scale'
+    label: "Scale",
   });
-  fresnelFolder.addBinding(water.material.uniforms.uFresnelPower, 'value', {
+  fresnelFolder.addBinding(water.material.uniforms.uFresnelPower, "value", {
     min: 0,
     max: 3,
-    label: 'Power'
+    label: "Power",
   });
 
   // Add Caustics controls
-  const causticsFolder = waterFolder.addFolder({ title: 'Caustics' });
-  causticsFolder.addBinding(ground.material.uniforms.uCausticsColor, 'value', {
-    label: 'Color',
-    view: 'color',
-    color: { type: 'float' }
+  const causticsFolder = waterFolder.addFolder({ title: "Caustics" });
+  causticsFolder.addBinding(ground.material.uniforms.uCausticsColor, "value", {
+    label: "Color",
+    view: "color",
+    color: { type: "float" },
   });
-  causticsFolder.addBinding(ground.material.uniforms.uCausticsIntensity, 'value', {
-    min: 0,
-    max: 2,
-    label: 'Intensity'
-  });
-  causticsFolder.addBinding(ground.material.uniforms.uCausticsScale, 'value', {
+  causticsFolder.addBinding(
+    ground.material.uniforms.uCausticsIntensity,
+    "value",
+    {
+      min: 0,
+      max: 2,
+      label: "Intensity",
+    }
+  );
+  causticsFolder.addBinding(ground.material.uniforms.uCausticsScale, "value", {
     min: 0,
     max: 200,
-    label: 'Scale'
+    label: "Scale",
   });
-  causticsFolder.addBinding(ground.material.uniforms.uCausticsSpeed, 'value', {
+  causticsFolder.addBinding(ground.material.uniforms.uCausticsSpeed, "value", {
     min: 0,
     max: 1,
-    label: 'Speed'
+    label: "Speed",
   });
-  causticsFolder.addBinding(ground.material.uniforms.uCausticsOffset, 'value', {
+  causticsFolder.addBinding(ground.material.uniforms.uCausticsOffset, "value", {
     min: 0,
     max: 2,
-    label: 'Offset'
+    label: "Offset",
   });
-  causticsFolder.addBinding(ground.material.uniforms.uCausticsThickness, 'value', {
+  causticsFolder.addBinding(
+    ground.material.uniforms.uCausticsThickness,
+    "value",
+    {
+      min: 0,
+      max: 1,
+      label: "Thickness",
+    }
+  );
+
+  const rippleFolder = waterFolder.addFolder({ title: "Ripples (on click)" });
+  rippleFolder.addBinding(water.material.uniforms.uRippleAmplitude, "value", {
     min: 0,
-    max: 1,
-    label: 'Thickness'
+    max: 0.2,
+    step: 0.001,
+    label: "Amplitude",
+  });
+  rippleFolder.addBinding(water.material.uniforms.uRippleFrequency, "value", {
+    min: 1,
+    max: 50,
+    step: 0.1,
+    label: "Frequency",
+  });
+  rippleFolder.addBinding(water.material.uniforms.uRippleSpeed, "value", {
+    min: 0.1,
+    max: 10,
+    step: 0.1,
+    label: "Speed",
+  });
+  rippleFolder.addBinding(water.material.uniforms.uRippleDecay, "value", {
+    min: 0,
+    max: 10,
+    step: 0.1,
+    label: "Decay",
   });
 }
