@@ -4,6 +4,9 @@ import fragmentShader from '../shaders/water_fragment.glsl?raw';
 // --- Import Simulation Shaders ---
 import simulationVertexShader from '../shaders/simulation_vertex.glsl?raw';
 import simulationFragmentShader from '../shaders/simulation_fragment.glsl?raw';
+// --- Import Caustics Shaders ---
+import causticsVertexShader from '../shaders/caustics_vertex.glsl?raw';
+import causticsFragmentShader from '../shaders/caustics_fragment.glsl?raw';
 
 export default class Water extends THREE.Mesh {
     constructor(options) {
@@ -53,6 +56,38 @@ export default class Water extends THREE.Mesh {
         this.disturbanceQueue = []; // Queue for click/collision disturbances
         // --- End Simulation Setup ---
 
+        // --- Caustics Setup ---
+        this.causticsResolution = this.waterResolution * 2; // Caustics can be higher res if needed
+        this.causticsRenderTarget = new THREE.WebGLRenderTarget(this.causticsResolution, this.causticsResolution, {
+            type: THREE.HalfFloatType, // Use HalfFloat for better precision if needed, or FloatType
+            minFilter: THREE.LinearFilter,
+            magFilter: THREE.LinearFilter,
+            format: THREE.RGBAFormat, // Or just RedFormat if only storing intensity
+            stencilBuffer: false
+        });
+
+        this.causticsMaterial = new THREE.ShaderMaterial({
+            vertexShader: causticsVertexShader,
+            fragmentShader: causticsFragmentShader,
+            uniforms: {
+                uHeightMap: { value: null }, // Will be set in renderCaustics
+                uResolution: { value: new THREE.Vector2(this.simulationResolution, this.simulationResolution) }, // Resolution of heightmap
+                uCausticsResolution: { value: new THREE.Vector2(this.causticsResolution, this.causticsResolution) },
+                uLightDirection: { value: new THREE.Vector3(0.5, -1.0, 0.5).normalize() }, // Example light direction
+                uWaterDepth: { value: 0.5 }, // Virtual depth for refraction calculation
+                uIntensity: { value: 1.5 }, // Caustics brightness
+            },
+            transparent: true,
+        });
+
+        this.causticsScene = new THREE.Scene();
+        this.causticsCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        this.causticsQuad = new THREE.Mesh(
+            new THREE.PlaneGeometry(2, 2),
+            this.causticsMaterial
+        );
+        this.causticsScene.add(this.causticsQuad);
+        // --- End Caustics Setup ---
 
         // --- Main Water Material ---
         this.material = new THREE.ShaderMaterial({
@@ -86,7 +121,7 @@ export default class Water extends THREE.Mesh {
             options.resolution
         );
         this.rotation.x = -Math.PI / 2;
-        this.position.z = this.waterPlaneSize.height / 2; // Adjust position based on size if needed
+        // this.position.z = this.waterPlaneSize.height / 2; // Adjust position based on size if needed
     }
 
     // --- Add Disturbance to Simulation ---
@@ -116,7 +151,6 @@ export default class Water extends THREE.Mesh {
         renderer.xr.enabled = false;
         renderer.shadowMap.autoUpdate = false;
 
-
         // --- Simulation Pass ---
         renderer.setRenderTarget(this.renderTarget2); // Render simulation to RT2
         this.simulationMaterial.uniforms.tPrev.value = this.renderTarget1.texture; // Read from RT1
@@ -132,9 +166,9 @@ export default class Water extends THREE.Mesh {
             this.simulationMaterial.uniforms.uApplyDisturbance.value = false;
         }
 
+        renderer.clear(); // Clear the target before rendering
         renderer.render(this.simulationScene, this.simulationCamera);
         // --- End Simulation Pass ---
-
 
         // Swap Render Targets for next frame
         [this.renderTarget1, this.renderTarget2] = [this.renderTarget2, this.renderTarget1];
@@ -148,10 +182,45 @@ export default class Water extends THREE.Mesh {
         renderer.shadowMap.autoUpdate = currentShadowAutoUpdate;
     }
 
+    // --- Caustics Rendering Step ---
+    renderCaustics(renderer) {
+        if (!renderer) {
+            console.error("Renderer not provided to renderCaustics function.");
+            return;
+        }
+
+        const currentRenderTarget = renderer.getRenderTarget();
+        const currentXrEnabled = renderer.xr.enabled;
+        const currentShadowAutoUpdate = renderer.shadowMap.autoUpdate;
+
+        renderer.xr.enabled = false;
+        renderer.shadowMap.autoUpdate = false;
+
+        // --- Caustics Pass ---
+        renderer.setRenderTarget(this.causticsRenderTarget);
+        // Use the *latest* height map from the simulation (which is now in RT2 after the swap)
+        this.causticsMaterial.uniforms.uHeightMap.value = this.renderTarget2.texture;
+        // Update light direction if it's dynamic
+        // this.causticsMaterial.uniforms.uLightDirection.value = ...;
+
+        renderer.clear(); // Important: Clear the caustics target
+        renderer.render(this.causticsScene, this.causticsCamera);
+        // --- End Caustics Pass ---
+
+        // Restore previous renderer state
+        renderer.setRenderTarget(currentRenderTarget);
+        renderer.xr.enabled = currentXrEnabled;
+        renderer.shadowMap.autoUpdate = currentShadowAutoUpdate;
+    }
 
     // --- General Update (e.g., for time uniform) ---
     update(time) {
         this.material.uniforms.uTime.value = time;
         // Note: Simulation is handled by simulate() method
+    }
+
+    // --- Expose Caustics Texture ---
+    getCausticsTexture() {
+        return this.causticsRenderTarget.texture;
     }
 }

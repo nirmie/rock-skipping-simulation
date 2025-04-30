@@ -121,43 +121,43 @@ export function setupUI({ waterResolution, water, ground }) {
   });
 
   // Add Caustics controls
-  const causticsFolder = waterFolder.addFolder({ title: "Caustics" });
-  causticsFolder.addBinding(ground.material.uniforms.uCausticsColor, "value", {
-    label: "Color",
-    view: "color",
-    color: { type: "float" },
-  });
-  causticsFolder.addBinding(
-    ground.material.uniforms.uCausticsIntensity,
-    "value",
-    {
-      min: 0,
-      max: 2,
-      label: "Intensity",
-    }
-  );
-  causticsFolder.addBinding(ground.material.uniforms.uCausticsScale, "value", {
-    min: 0,
-    max: 200,
-    label: "Scale",
-  });
-  causticsFolder.addBinding(ground.material.uniforms.uCausticsSpeed, "value", {
-    min: 0,
-    max: 1,
-    label: "Speed",
-  });
-  causticsFolder.addBinding(ground.material.uniforms.uCausticsOffset, "value", {
-    min: 0,
-    max: 2,
-    label: "Offset",
-  });
-  causticsFolder.addBinding(
-    ground.material.uniforms.uCausticsThickness,
-    "value",
-    {
-      min: 0,
-      max: 1,
-      label: "Thickness",
-    }
-  );
+  // const causticsFolder = waterFolder.addFolder({ title: "Caustics" });
+  // causticsFolder.addBinding(ground.material.uniforms.uCausticsColor, "value", {
+  //   label: "Color",
+  //   view: "color",
+  //   color: { type: "float" },
+  // });
+  // causticsFolder.addBinding(
+  //   ground.material.uniforms.uCausticsIntensity,
+  //   "value",
+  //   {
+  //     min: 0,
+  //     max: 2,
+  //     label: "Intensity",
+  //   }
+  // );
+  // causticsFolder.addBinding(ground.material.uniforms.uCausticsScale, "value", {
+  //   min: 0,
+  //   max: 200,
+  //   label: "Scale",
+  // });
+  // causticsFolder.addBinding(ground.material.uniforms.uCausticsSpeed, "value", {
+  //   min: 0,
+  //   max: 1,
+  //   label: "Speed",
+  // });
+  // causticsFolder.addBinding(ground.material.uniforms.uCausticsOffset, "value", {
+  //   min: 0,
+  //   max: 2,
+  //   label: "Offset",
+  // });
+  // causticsFolder.addBinding(
+  //   ground.material.uniforms.uCausticsThickness,
+  //   "value",
+  //   {
+  //     min: 0,
+  //     max: 1,
+  //     label: "Thickness",
+  //   }
+  // );
 }
