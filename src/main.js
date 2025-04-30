@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'; // Corrected import path
 import Water from './objects/water';
 import Ground from './objects/ground';
 import { setupUI } from './ui';
@@ -7,6 +7,7 @@ import { setupUI } from './ui';
 // Animation
 const clock = new THREE.Clock();
 const waterResolution = 256;
+const waterPlaneSize = { width: 2, height: 2 }; // Define size here to pass to Water
 
 // Scene setup
 const scene = new THREE.Scene();
@@ -18,94 +19,144 @@ renderer.toneMapping = THREE.NeutralToneMapping;
 renderer.toneMappingExposure = 1.5;
 document.body.appendChild(renderer.domElement);
 
-// --- Raycasting Setup ---
+// Raycasting Setup
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
-let lastClickTime = -Infinity; // Initialize to a very old time
-let lastClickPosition = new THREE.Vector2(); // Initialize
 
 // Environment map
 const cubeTextureLoader = new THREE.CubeTextureLoader();
-cubeTextureLoader.setPath('/sunsetEnv/');
-const environmentMap = cubeTextureLoader.loadAsync([
-  'px.png', // positive x
-  'nx.png', // negative x 
-  'py.png', // positive y
-  'ny.png', // negative y
-  'pz.png', // positive z
-  'nz.png'  // negative z
+cubeTextureLoader.setPath('/sunsetEnv/'); // Make sure this path is correct relative to your public folder
+const environmentMapPromise = cubeTextureLoader.loadAsync([ // Use loadAsync
+    'px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png'
 ]);
-environmentMap.catch(error => {
-  console.error('Failed to load environment map:', error);
-});
 
-scene.background = new THREE.Color(0x87ceeb); // Sky blue
-scene.environment = environmentMap;
-environmentMap.then(texture => {
-  scene.background = texture;
-  scene.environment = texture;
-}).catch(error => {
-  console.error('Failed to load environment map:', error);
-});
+
+// --- Water Object ---
+// Initialize water variable, will be assigned after env map loads
+let water;
+
+// --- Ground Object ---
+const ground = new Ground({ planeSize: waterPlaneSize }); // Pass size to ground
+scene.add(ground);
+
+// --- Async Initialization ---
+async function initializeScene() {
+    try {
+        const loadedEnvMap = await environmentMapPromise;
+        scene.background = loadedEnvMap;
+        scene.environment = loadedEnvMap;
+
+        // Create Water *after* env map is loaded
+        water = new Water({
+            resolution: waterResolution,
+            envMap: loadedEnvMap,
+            planeSize: waterPlaneSize // Pass plane size
+            // heightMap is now handled internally by Water class
+        });
+        scene.add(water);
+
+        // Setup UI after water is created
+        setupUI({ waterResolution, water, ground }); // Pass water instance
+
+        // Start animation loop only after everything is loaded
+        animate();
+
+    } catch (error) {
+        console.error('Failed to initialize scene:', error);
+        // Fallback background color if env map fails
+        scene.background = new THREE.Color(0x87ceeb);
+        // Optionally create water with null envMap or handle error differently
+        water = new Water({
+            resolution: waterResolution,
+            envMap: null, // Or a default texture
+            planeSize: waterPlaneSize
+        });
+        scene.add(water);
+        setupUI({ waterResolution, water, ground });
+        animate(); // Still start animation maybe?
+    }
+}
+
 
 // Camera position
-camera.position.set(0.5, 0.25, -1);
+camera.position.set(0.5, 1.5, -2); // Adjusted camera for better view potentially
 
 // Controls
 const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, 5); // Point controls towards the water center
 controls.enableDamping = true;
 
-// Add some light to see the ground material
+// Add some light
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
 scene.add(ambientLight);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+directionalLight.position.set(5, 5, 5);
+scene.add(directionalLight);
 
-const water = new Water({ resolution: waterResolution, envMap: environmentMap});
-scene.add(water);
 
-const ground = new Ground();
-scene.add(ground);
-
+let lastTime = 0;
 
 function animate() {
-  const elapsedTime = clock.getElapsedTime();
-  controls.update();
+    requestAnimationFrame(animate); // Request next frame first
 
-  // Pass click data to water shader
-  water.material.uniforms.uLastClickTime.value = lastClickTime;
-  water.material.uniforms.uLastClickPosition.value.copy(lastClickPosition); // Use copy for Vector2
+    const elapsedTime = clock.getElapsedTime();
+    const deltaTime = elapsedTime - lastTime;
+    lastTime = elapsedTime;
 
-  water.update(elapsedTime);
-  ground.update(elapsedTime);
-  renderer.render(scene, camera);
-  requestAnimationFrame(animate);
+    controls.update();
+
+    // --- Simulation Update ---
+    if (water) { // Check if water exists
+        water.simulate(renderer, deltaTime); // Call the water's simulate method
+        renderer.state.reset();
+        water.update(elapsedTime); // Call the water's general update method
+
+    }
+    // --- End Simulation Update ---
+
+    if (ground) { // Check if ground exists
+        ground.update(elapsedTime);
+
+    }
+
+    renderer.render(scene, camera); // Render main scene
 }
 
 // Handle resize
 window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    // Note: Render targets in Water class don't need resizing here
 });
 
+// Click Event Listener - Updated to call water.addDisturbance
 window.addEventListener('pointerdown', (event) => {
-  // Calculate pointer position in normalized device coordinates (-1 to +1)
-  pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    if (!water) return; // Don't raycast if water isn't loaded yet
 
-  // Update the picking ray with the camera and pointer position
-  raycaster.setFromCamera(pointer, camera);
+    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+    const intersects = raycaster.intersectObject(water); // Raycast against the water mesh
 
-  // Calculate objects intersecting the picking ray
-  const intersects = raycaster.intersectObject(water); // Check only against water
+    if (intersects.length > 0) {
+        const intersectionPoint = intersects[0].point;
+        const uv = intersects[0].uv; // Use the UV coordinates from the intersection
 
-  if (intersects.length > 0) {
-      const intersectionPoint = intersects[0].point;
-      // Store the XZ coordinates and the time of the click
-      lastClickPosition.set(intersectionPoint.x, intersectionPoint.z);
-      lastClickTime = clock.getElapsedTime();
-      console.log('Clicked water at:', intersectionPoint.x, intersectionPoint.z, 'Time:', lastClickTime);
-  }
+        // Check if UV exists (it should for PlaneGeometry)
+        if (uv) {
+            // Add disturbance using the UV coordinates directly
+            water.addDisturbance(uv, 0.2); // Adjust intensity (0.2) as needed
+            console.log('Adding disturbance at UV:', uv.x, uv.y);
+        } else {
+            // Fallback: Convert world XZ to UV (less accurate if plane isn't perfectly aligned)
+            const uvX = (intersectionPoint.x / waterPlaneSize.width) + 0.5;
+            const uvY = (intersectionPoint.z / waterPlaneSize.height) + 0.5; // Z maps to V
+            water.addDisturbance(new THREE.Vector2(uvX, uvY), 0.2);
+            console.log('Adding disturbance via fallback UV calculation:', uvX, uvY);
+        }
+    }
 });
 
-animate();
-setupUI({ waterResolution, water, ground });
+// --- Start Initialization ---
+initializeScene();

@@ -7,6 +7,16 @@ export function setupUI({ waterResolution, water, ground }) {
   // Water parameters folder
   const waterFolder = pane.addFolder({ title: "Water" });
 
+  if (water.simulationMaterial) {
+    const simFolder = waterFolder.addFolder({ title: 'Simulation' });
+    simFolder.addBinding(water.simulationMaterial.uniforms.uViscosity, 'value', { min: 0, max: 0.1, step: 0.001, label: 'Viscosity' });
+    simFolder.addBinding(water.simulationMaterial.uniforms.uDisturbanceAmount, 'value', { min: 0, max: 0.1, step: 0.001, label: 'disturbance amount' });
+    simFolder.addBinding(water.simulationMaterial.uniforms.uDisturbanceAmount, 'value', { min: 0.001, max: 0.1, step: 0.001, label: 'ripple radius' });
+    simFolder.addBinding(water.material.uniforms.uHeightScale, 'value', { min: 0, max: 1.0, step: 0.01, label: 'Height Scale' });
+  } else {
+    console.warn("Water object does not have simulationMaterial for UI setup.");
+  }
+
   //   const geometryFolder = waterFolder.addFolder({ title: 'Geometry' });
 
   //   geometryFolder.addBinding(waterResolution, 'size', { min: 2, max: 1024, step: 2, label: 'Resolution' }).on('change', ({ value }) => {
@@ -22,39 +32,34 @@ export function setupUI({ waterResolution, water, ground }) {
   //     water.geometry = newGeometry;
   //   });
 
-  // Waves
-  const wavesFolder = waterFolder.addFolder({ title: "Waves" });
-  wavesFolder.addBinding(water.material.uniforms.uWavesAmplitude, "value", {
-    min: 0,
-    max: 0.1,
-    label: "Amplitude",
-  });
-  wavesFolder.addBinding(water.material.uniforms.uWavesFrequency, "value", {
-    min: 0.1,
-    max: 10,
-    label: "Frequency",
-  });
-  wavesFolder.addBinding(water.material.uniforms.uWavesPersistence, "value", {
-    min: 0,
-    max: 1,
-    label: "Persistence",
-  });
-  wavesFolder.addBinding(water.material.uniforms.uWavesLacunarity, "value", {
-    min: 0,
-    max: 3,
-    label: "Lacunarity",
-  });
-  wavesFolder.addBinding(water.material.uniforms.uWavesIterations, "value", {
-    min: 1,
-    max: 10,
-    step: 1,
-    label: "Iterations",
-  });
-  wavesFolder.addBinding(water.material.uniforms.uWavesSpeed, "value", {
-    min: 0,
-    max: 1,
-    label: "Speed",
-  });
+  // // Waves
+  // const wavesFolder = waterFolder.addFolder({ title: "Waves" });
+  // wavesFolder.addBinding(water.material.uniforms.uWavesAmplitude, "value", {
+  //   min: 0,
+  //   max: 0.1,
+  //   label: "Amplitude",
+  // });
+  // wavesFolder.addBinding(water.material.uniforms.uWavesFrequency, "value", {
+  //   min: 0.1,
+  //   max: 10,
+  //   label: "Frequency",
+  // });
+  // wavesFolder.addBinding(water.material.uniforms.uWavesPersistence, "value", {
+  //   min: 0,
+  //   max: 1,
+  //   label: "Persistence",
+  // });
+  // wavesFolder.addBinding(water.material.uniforms.uWavesLacunarity, "value", {
+  //   min: 0,
+  //   max: 3,
+  //   label: "Lacunarity",
+  // });
+  // wavesFolder.addBinding(water.material.uniforms.uWavesIterations, "value", {
+  //   min: 1,
+  //   max: 10,
+  //   step: 1,
+  //   label: "Iterations",
+  // });
 
   // Color
   const colorFolder = waterFolder.addFolder({ title: "Color" });
@@ -155,30 +160,4 @@ export function setupUI({ waterResolution, water, ground }) {
       label: "Thickness",
     }
   );
-
-  const rippleFolder = waterFolder.addFolder({ title: "Ripples (on click)" });
-  rippleFolder.addBinding(water.material.uniforms.uRippleAmplitude, "value", {
-    min: 0,
-    max: 0.2,
-    step: 0.001,
-    label: "Amplitude",
-  });
-  rippleFolder.addBinding(water.material.uniforms.uRippleFrequency, "value", {
-    min: 1,
-    max: 50,
-    step: 0.1,
-    label: "Frequency",
-  });
-  rippleFolder.addBinding(water.material.uniforms.uRippleSpeed, "value", {
-    min: 0.1,
-    max: 10,
-    step: 0.1,
-    label: "Speed",
-  });
-  rippleFolder.addBinding(water.material.uniforms.uRippleDecay, "value", {
-    min: 0,
-    max: 10,
-    step: 0.1,
-    label: "Decay",
-  });
 }

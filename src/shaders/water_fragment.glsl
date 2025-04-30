@@ -1,6 +1,6 @@
 precision highp float;
 
-uniform samplerCube uEnvironementMap;
+uniform samplerCube uEnvironmentMap; // Correct spelling
 
 uniform vec3 uTroughColor;
 uniform vec3 uSurfaceColor;
@@ -23,7 +23,7 @@ void main() {
   vec3 reflected = reflect(viewDirection, vNormal);
   // reflected.x *= -1.0;
 
-  vec3 reflectionColor = textureCube(uEnvironementMap, reflected).rgb;
+  vec3 reflectionColor = textureCube(uEnvironmentMap, reflected).rgb;
 
   float fresnel =
       pow(1.0 - clamp(dot(viewDirection, vNormal), 0.0, 1.0), uFresnelPower) *
