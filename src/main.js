@@ -16,7 +16,9 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(devicePixelRatio);
 renderer.toneMapping = THREE.NeutralToneMapping;
-renderer.toneMappingExposure = 1.5;
+renderer.toneMappingExposure = 1.2; // Lowered exposure
+renderer.shadowMap.enabled = true; // Enable shadow maps
+renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
 document.body.appendChild(renderer.domElement);
 
 // Raycasting Setup
@@ -37,6 +39,7 @@ let water;
 
 // --- Ground Object ---
 const ground = new Ground({ planeSize: waterPlaneSize }); // Pass size to ground
+ground.receiveShadow = true; // Ground should receive shadows
 scene.add(ground);
 
 // --- Async Initialization ---
@@ -51,12 +54,12 @@ async function initializeScene() {
             resolution: waterResolution,
             envMap: loadedEnvMap,
             planeSize: waterPlaneSize // Pass plane size
-            // heightMap is now handled internally by Water class
         });
+        water.castShadow = true; // Water surface can cast shadows (optional, might be expensive)
         scene.add(water);
 
-        // Setup UI after water is created
-        setupUI({ waterResolution, water, ground }); // Pass water instance
+        // Setup UI after water and ground are created
+        setupUI({ waterResolution, water, ground }); // Pass both instances
 
         // Start animation loop only after everything is loaded
         animate();
@@ -72,6 +75,7 @@ async function initializeScene() {
             planeSize: waterPlaneSize
         });
         scene.add(water);
+        // Ensure ground is passed to setupUI even in error case if needed
         setupUI({ waterResolution, water, ground });
         animate(); // Still start animation maybe?
     }
@@ -79,22 +83,45 @@ async function initializeScene() {
 
 
 // Camera position
-camera.position.set(0.5, 1.5, -2); // Adjusted camera for better view potentially
-
+camera.position.set(0, 1.5, -2); // Adjusted camera for better view potentially
+// camera.position.set(0, 0, 0);
 // Controls
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 0, 5); // Point controls towards the water center
+controls.target.set(0, 0, 1); // Point controls towards the water center
 controls.enableDamping = true;
 
-// Add some light
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-scene.add(ambientLight);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-directionalLight.position.set(5, 5, 5);
+// // --- Lights --- 
+// // Remove or reduce ambient light if directional is strong
+// scene.remove(scene.getObjectOfType(THREE.AmbientLight)); // Remove previous ambient light
+// const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); // Lower intensity ambient
+// scene.add(ambientLight);
+
+// Strong Directional Light (Sun)
+// scene.remove(scene.getObjectOfType(THREE.DirectionalLight)); // Remove previous directional light
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5); // Lowered intensity
+directionalLight.position.set(2, 5, 3); // Adjust position/direction
+directionalLight.castShadow = true; // Enable shadow casting
+
+// Configure shadow properties
+directionalLight.shadow.mapSize.width = 1024; // Shadow map resolution
+directionalLight.shadow.mapSize.height = 1024;
+directionalLight.shadow.camera.near = 0.1;
+directionalLight.shadow.camera.far = 20;
+// Adjust shadow camera frustum to cover the area of interest
+directionalLight.shadow.camera.left = -waterPlaneSize.width;
+directionalLight.shadow.camera.right = waterPlaneSize.width;
+directionalLight.shadow.camera.top = waterPlaneSize.height;
+directionalLight.shadow.camera.bottom = -waterPlaneSize.height;
+
 scene.add(directionalLight);
+// Optional: Add a helper to visualize the shadow camera
+// const shadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
+// scene.add(shadowHelper);
+// --- End Lights ---
 
 
 let lastTime = 0;
+const lightDirection = new THREE.Vector3(); // Reusable vector
 
 function animate() {
     requestAnimationFrame(animate); // Request next frame first
@@ -105,18 +132,34 @@ function animate() {
 
     controls.update();
 
-    // --- Simulation Update ---
+    // --- Simulation & Caustics Update ---
     if (water) { // Check if water exists
-        water.simulate(renderer, deltaTime); // Call the water's simulate method
-        renderer.state.reset();
-        water.update(elapsedTime); // Call the water's general update method
+        // 1. Simulate water surface
+        water.simulate(renderer, deltaTime);
+        renderer.state.reset(); // Reset state after simulation render pass
 
+        // 2. Update light direction for caustics
+        // Get world direction of light
+        lightDirection.copy(directionalLight.position).normalize();
+        // If light has a target: lightDirection.subVectors(directionalLight.position, directionalLight.target.position).normalize();
+        water.causticsMaterial.uniforms.uLightDirection.value.copy(lightDirection);
+
+        // 3. Render caustics map based on simulation and light
+        water.renderCaustics(renderer);
+        renderer.state.reset(); // Reset state after caustics render pass
+
+        // 4. Update water appearance (time, heightmap)
+        water.update(elapsedTime);
+
+        // 5. Update ground material with the generated caustics map
+        if (ground) {
+            ground.material.uniforms.uCausticsMap.value = water.getCausticsTexture();
+        }
     }
-    // --- End Simulation Update ---
+    // --- End Simulation & Caustics Update ---
 
     if (ground) { // Check if ground exists
-        ground.update(elapsedTime);
-
+        ground.update(elapsedTime); // Update ground time uniform if needed
     }
 
     renderer.render(scene, camera); // Render main scene
