@@ -14,6 +14,7 @@ export default class Water extends THREE.Mesh {
 
         this.waterResolution = options.resolution;
         this.waterPlaneSize = options.planeSize || { width: 2, height: 2 }; // Default or passed size
+        const aspectRatio = this.waterPlaneSize.width / this.waterPlaneSize.height; // Calculate aspect ratio
 
         // --- Simulation Setup ---
         this.simulationResolution = this.waterResolution;
@@ -36,10 +37,11 @@ export default class Water extends THREE.Mesh {
                 tPrev: { value: this.renderTarget1.texture }, // Start reading from RT1
                 uResolution: { value: new THREE.Vector2(this.simulationResolution, this.simulationResolution) },
                 uDelta: { value: 0.0 },
-                uViscosity: { value: 0.005 },
+                uViscosity: { value: 0.002 },
+                uAspect: { value: aspectRatio },
                 uApplyDisturbance: { value: false },
                 uDisturbancePos: { value: new THREE.Vector2() },
-                uDisturbanceAmount: { value: 0.0 },
+                uDisturbanceAmount: { value: 0.02 },
                 uDisturbanceRadius: { value: 0.02 },
             }
         });
@@ -154,7 +156,7 @@ export default class Water extends THREE.Mesh {
         // --- Simulation Pass ---
         renderer.setRenderTarget(this.renderTarget2); // Render simulation to RT2
         this.simulationMaterial.uniforms.tPrev.value = this.renderTarget1.texture; // Read from RT1
-        this.simulationMaterial.uniforms.uDelta.value = Math.min(deltaTime, 1 / 60) * 12.0; // Clamp delta, adjust speed multiplier
+        this.simulationMaterial.uniforms.uDelta.value = Math.min(deltaTime, 1 / 60) * 8.0; // Clamp delta, adjust speed multiplier
 
         // Process one disturbance from the queue
         if (this.disturbanceQueue.length > 0) {

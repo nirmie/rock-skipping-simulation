@@ -7,7 +7,7 @@ import { setupUI } from './ui';
 // Animation
 const clock = new THREE.Clock();
 const waterResolution = 256;
-const waterPlaneSize = { width: 2, height: 2 }; // Define size here to pass to Water
+const waterPlaneSize = { width: 2, height: 10 }; // Define size here to pass to Water
 
 // Scene setup
 const scene = new THREE.Scene();
