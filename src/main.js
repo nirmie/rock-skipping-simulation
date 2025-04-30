@@ -83,7 +83,7 @@ async function initializeScene() {
 
 
 // Camera position
-camera.position.set(0, 1.5, -2); // Adjusted camera for better view potentially
+camera.position.set(0, 1.5, -6.8); // Adjusted camera for better view potentially
 // camera.position.set(0, 0, 0);
 // Controls
 const controls = new OrbitControls(camera, renderer.domElement);
