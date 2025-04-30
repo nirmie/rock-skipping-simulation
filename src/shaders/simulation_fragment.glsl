@@ -4,6 +4,8 @@ uniform sampler2D tPrev; // Previous frame's height/velocity data
 uniform vec2 uResolution; // Resolution of the simulation texture
 uniform float uDelta;     // Time delta (adjusted for simulation speed)
 uniform float uViscosity; // Damping factor
+uniform float uAspect;    // Aspect ratio (width / height) of the physical plane
+
 
 // Click/Disturbance Input (reset each frame)
 uniform bool uApplyDisturbance;
@@ -32,8 +34,10 @@ void main() {
     float H_u = texture2D(tPrev, texel(vec2( 0.0, 1.0))).r; // Up (Bottom in UV)
 
     // Calculate Laplacian (measure of curvature)
-    float laplacian = (H_l + H_r + H_d + H_u) - 4.0 * height;
-
+    float aspectSq = uAspect * uAspect;
+    float laplacian_x = (H_l + H_r - 2.0 * height) / aspectSq; // Scaled horizontal contribution
+    float laplacian_z = (H_d + H_u - 2.0 * height);           // Vertical contribution
+    float laplacian = laplacian_x + laplacian_z; 
     // Update velocity based on acceleration (proportional to laplacian)
     // The uDelta factor scales the simulation speed
     float newVelocity = velocity + laplacian * uDelta;
