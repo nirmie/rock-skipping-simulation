@@ -14,12 +14,10 @@ varying vec3 vNormal; // Receive world normal
 void main() {
   // --- Texture Mapping ---
   vec4 texColor = texture2D(uTexture, vUv * uTextureRepeat);
-  bool isInnerSurface = true; // Default to outer surface
   // --- Determine if it's an inner surface (floor top or inner wall) ---
   // get vector from point to center of pool
   vec3 dirToCenter = normalize(uPoolCenter - vPosition);
     float isInside = step(0.0, dot(vNormal, dirToCenter));
-    // if (isInside > 0.5) { isInnerSurface = true; } // Inside the pool
 
   // --- Caustics Mapping ---
   vec2 potentialCausticsUv = vec2(
@@ -30,8 +28,7 @@ void main() {
   float causticsValue = 0.0; // Default to no caustics
 
   // Check if it's an inner surface AND within the XZ bounds of the water plane
-  if (isInnerSurface && 
-      potentialCausticsUv.x >= 0.0 && potentialCausticsUv.x <= 1.0 &&
+  if (potentialCausticsUv.x >= 0.0 && potentialCausticsUv.x <= 1.0 &&
       potentialCausticsUv.y >= 0.0 && potentialCausticsUv.y <= 1.0 )
   {
       // If inside bounds and an inner surface, sample the caustics map

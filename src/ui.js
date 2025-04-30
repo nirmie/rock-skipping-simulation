@@ -1,5 +1,8 @@
 import { Pane } from "tweakpane";
 import * as THREE from "three";
+// Import the ground textures
+import { sandTexture, riverbedTexture } from './objects/ground';
+import { label } from "three/tsl";
 
 export function setupUI({ waterResolution, water, ground }) {
   const pane = new Pane();
@@ -120,44 +123,86 @@ export function setupUI({ waterResolution, water, ground }) {
     label: "Power",
   });
 
-  // Add Caustics controls
-  // const causticsFolder = waterFolder.addFolder({ title: "Caustics" });
-  // causticsFolder.addBinding(ground.material.uniforms.uCausticsColor, "value", {
-  //   label: "Color",
-  //   view: "color",
-  //   color: { type: "float" },
-  // });
-  // causticsFolder.addBinding(
-  //   ground.material.uniforms.uCausticsIntensity,
-  //   "value",
-  //   {
-  //     min: 0,
-  //     max: 2,
-  //     label: "Intensity",
-  //   }
-  // );
-  // causticsFolder.addBinding(ground.material.uniforms.uCausticsScale, "value", {
-  //   min: 0,
-  //   max: 200,
-  //   label: "Scale",
-  // });
-  // causticsFolder.addBinding(ground.material.uniforms.uCausticsSpeed, "value", {
-  //   min: 0,
-  //   max: 1,
-  //   label: "Speed",
-  // });
-  // causticsFolder.addBinding(ground.material.uniforms.uCausticsOffset, "value", {
-  //   min: 0,
-  //   max: 2,
-  //   label: "Offset",
-  // });
-  // causticsFolder.addBinding(
-  //   ground.material.uniforms.uCausticsThickness,
-  //   "value",
-  //   {
-  //     min: 0,
-  //     max: 1,
-  //     label: "Thickness",
-  //   }
-  // );
+  // Add Caustics controls (using water and ground uniforms)
+  const causticsFolder = pane.addFolder({ title: "Caustics" });
+  if (water.causticsMaterial) {
+    causticsFolder.addBinding(water.causticsMaterial.uniforms.uWaterDepth, "value", {
+      min: 0.1,
+      max: 2.0,
+      step: 0.01,
+      label: "Water Depth",
+    });
+    causticsFolder.addBinding(water.causticsMaterial.uniforms.uIntensity, "value", {
+      min: 0,
+      max: 5,
+      step: 0.1,
+      label: "Light Intensity",
+    });
+  }
+  if (ground.material) {
+    causticsFolder.addBinding(ground.material.uniforms.uCausticsIntensity, "value", {
+      min: 0,
+      max: 1.0,
+      step: 0.01,
+      label: "Ground Intensity",
+    });
+  }
+
+  // Helper object to map texture names to texture objects
+  const textureMap = {
+    Riverbed: riverbedTexture,
+    Sand: sandTexture,
+  };
+
+  // Intermediate state for Tweakpane texture selection
+  const uiState = {
+    groundTexture: 'Riverbed', // Default value
+    exGroundTexture: 'Riverbed', // Default value
+  };
+
+  // Ground parameters folder
+  const groundFolder = pane.addFolder({ title: "Ground" });
+  if (ground.material) {
+    // Bind to the intermediate string state
+    groundFolder.addBinding(uiState, 'groundTexture', {
+      label: 'Texture',
+      options: {
+        Riverbed: 'Riverbed',
+        Sand: 'Sand',
+      }
+    }).on('change', ({ value }) => {
+      // Update the actual uniform when the selection changes
+      ground.material.uniforms.uTexture.value = textureMap[value];
+    });
+
+    groundFolder.addBinding(ground.material.uniforms.uTextureRepeat.value, 'x', {
+      min: 1, max: 20, step: 0.5, label: 'Repeat X'
+    });
+    groundFolder.addBinding(ground.material.uniforms.uTextureRepeat.value, 'y', {
+      min: 1, max: 20, step: 0.5, label: 'Repeat Y'
+    });
+  }
+
+  // Exterior Ground parameters folder
+  const exGroundFolder = pane.addFolder({ title: "Exterior Ground" });
+  if (ground.exteriorMaterial) {
+    // Bind to the intermediate string state
+    exGroundFolder.addBinding(uiState, 'exGroundTexture', {
+      label: 'Texture',
+      options: {
+        Riverbed: 'Riverbed',
+        Sand: 'Sand',
+      }
+    }).on('change', ({ value }) => {
+      // Update the actual uniform when the selection changes
+      ground.exteriorMaterial.uniforms.uTexture.value = textureMap[value];
+    });
+
+    exGroundFolder.addBinding(ground.exteriorMaterial.uniforms.uTextureRepeat.value, 'x', {
+      min: 1, max: 20, step: 0.5, label: 'Repeat X'
+    });
+    exGroundFolder.addBinding(ground.exteriorMaterial.uniforms.uTextureRepeat.value, 'y', {
+      min: 1, max: 20, step: 0.5, label: 'Repeat Y'
+    });
+  }
 }

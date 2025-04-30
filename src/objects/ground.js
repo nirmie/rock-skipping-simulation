@@ -4,6 +4,7 @@ import fragmentShader from '../shaders/ground_fragment.glsl?raw';
 import exVertexShader from '../shaders/ground_vertex_ex.glsl?raw';
 import exFragmentShader from '../shaders/ground_fragment_ex.glsl?raw';
 
+// Export textures so they can be imported and used in UI
 const sandTexture = new THREE.TextureLoader().load('ocean_floor.png');
 sandTexture.wrapS = THREE.RepeatWrapping;
 sandTexture.wrapT = THREE.RepeatWrapping;
@@ -12,6 +13,9 @@ const riverbedTexture = new THREE.TextureLoader().load('riverbed_bottom.png');
 riverbedTexture.wrapS = THREE.RepeatWrapping;
 riverbedTexture.wrapT = THREE.RepeatWrapping;
 
+let texture = 'riverbed'; // Default texture
+export { sandTexture, riverbedTexture, texture };
+
 // Ground is now a Group containing the floor and walls
 export default class Ground extends THREE.Group {
     constructor(options) {
@@ -19,6 +23,8 @@ export default class Ground extends THREE.Group {
         this.groundPlaneSize = options.planeSize || { width: 2, height: 2 };
         const floorY = -0.5; // Y position of the floor
         const wallHeight = -floorY; // Height of walls (from floorY up to 0)
+
+
 
         // Shared Material for floor and walls
         this.material = new THREE.ShaderMaterial({
