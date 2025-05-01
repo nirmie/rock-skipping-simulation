@@ -24,6 +24,7 @@ export default class Rock {
         this.skipCount = 0;
         this.hasSunk = false;
         this.lastCollisionPoint = null;
+        this.lastUpdateTime = 0;
 
         // Create the rock geometry and mesh
         this.createMesh();
@@ -80,6 +81,7 @@ export default class Rock {
         this.isActive = true;
         this.hasSunk = false;
         this.skipCount = 0;
+        this.lastUpdateTime = 0;
     }
 
     reset() {
@@ -93,11 +95,26 @@ export default class Rock {
         this.hasSunk = false;
         this.skipCount = 0;
         this.lastCollisionPoint = null;
+        this.lastUpdateTime = 0;
     }
 
     update(deltaTime, waterHeight = 0, water) {
         if (!this.isActive || this.hasSunk) return;
 
+        // Use fixed time steps for more stable physics
+        const fixedDeltaTime = Math.min(deltaTime, 1 / 30); // Cap at 30 FPS for physics
+
+        // For high velocities, use smaller steps to prevent tunneling through water
+        const velocity = this.velocity.length();
+        const numSteps = velocity > 10 ? 2 : 1;
+        const subDelta = fixedDeltaTime / numSteps;
+
+        for (let step = 0; step < numSteps; step++) {
+            this.updateStep(subDelta, waterHeight, water);
+        }
+    }
+
+    updateStep(deltaTime, waterHeight, water) {
         // Store previous position for collision detection
         const prevPosition = this.position.clone();
 
@@ -128,12 +145,14 @@ export default class Rock {
 
         // Check for boundaries
         this.checkBoundaries();
+
+        // Update time
+        this.lastUpdateTime += deltaTime;
     }
 
     checkWaterCollision(prevPosition, waterHeight, water, deltaTime) {
         // Simple water collision: check if we crossed the water plane from above
         if (prevPosition.y >= waterHeight && this.position.y < waterHeight) {
-            console.log('Rock hit the water! at ', this.position);
             // Calculate precise collision point
             const t = (waterHeight - prevPosition.y) / (this.position.y - prevPosition.y);
             const collisionPoint = prevPosition.clone().lerp(this.position, t);
@@ -143,6 +162,9 @@ export default class Rock {
 
             // Calculate collision impact velocity
             const impactVelocity = this.velocity.length();
+
+            // Debug log the collision
+            console.log(`Rock collision at (${collisionPoint.x.toFixed(2)}, ${collisionPoint.y.toFixed(2)}, ${collisionPoint.z.toFixed(2)}) with velocity ${impactVelocity.toFixed(2)}`);
 
             // Only skip if velocity is above minimum threshold and we haven't exceeded max skips
             if (impactVelocity > this.options.minSkipVelocity && this.skipCount < this.options.skipsBeforeSink) {
@@ -174,12 +196,13 @@ export default class Rock {
 
                     // Intensity based on impact velocity and rock size
                     const disturbanceIntensity = Math.min(
-                        0.05,
-                        0.01 + (impactVelocity / 20) * this.options.radius
+                        0.2,
+                        0.2 + (impactVelocity / 20) * this.options.radius
                     );
 
                     // Add disturbance to water
-                    water.addDisturbance(new THREE.Vector2(uvX, uvY), 0.5);
+                    water.addDisturbance(new THREE.Vector2(uvX, uvY), 0.2);
+                    console.log(`Creating ripple at UV (${uvX.toFixed(2)}, ${uvY.toFixed(2)}) with intensity ${disturbanceIntensity.toFixed(3)}`);
                 }
             } else {
                 // Rock has sunk
@@ -188,10 +211,11 @@ export default class Rock {
                 // Create final splash disturbance
                 if (water) {
                     const uvX = (collisionPoint.x / this.options.waterPlaneSize.width) + 0.5;
-                    const uvY = (collisionPoint.z / this.options.waterPlaneSize.height) + 0.5;
+                    const uvY = - (collisionPoint.z / this.options.waterPlaneSize.height) + 0.5;
 
                     // Slightly bigger disturbance for sinking
-                    water.addDisturbance(new THREE.Vector2(uvX, uvY), 0.03);
+                    water.addDisturbance(new THREE.Vector2(uvX, uvY), 0.2);
+                    console.log(`Rock sinking at UV (${uvX.toFixed(2)}, ${uvY.toFixed(2)})`);
                 }
 
                 // Gradually sink the rock
@@ -210,7 +234,8 @@ export default class Rock {
             this.position.x > halfWidth ||
             this.position.z < -halfHeight ||
             this.position.z > halfHeight ||
-            this.position.y < -1 // Below ground
+            this.position.y < -1 || // Below ground
+            this.lastUpdateTime > 30 // Maximum simulation time (30 seconds)
         ) {
             this.isActive = false;
         }
