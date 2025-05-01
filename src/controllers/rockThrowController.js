@@ -9,8 +9,8 @@ export default class RockThrowController {
         this.water = options.water;
         this.waterPlaneSize = options.waterPlaneSize || { width: 2, height: 2 };
 
-        // Improved throw velocity for farther throws
-        this.throwVelocity = options.throwVelocity || 8.0;
+        // INCREASED: Higher base velocity for farther throws
+        this.throwVelocity = options.throwVelocity || 12.0;
 
         // DOM element for event listeners
         this.domElement = options.domElement || document.body;
@@ -32,9 +32,9 @@ export default class RockThrowController {
         // Position the throw near the bottom-left corner of the water
         // This allows us to throw across the entire pool
         this.throwPosition = new THREE.Vector3(
-            -this.waterPlaneSize.width * 0.45,  // Left side
+            0,
             0.5,                                // Slightly above water
-            -this.waterPlaneSize.height * 0.45  // Bottom of pool
+            -this.waterPlaneSize.height * 0.5  // Bottom of pool
         );
 
         // Create visual aids
@@ -47,6 +47,9 @@ export default class RockThrowController {
 
         // Add event listeners
         this.addEventListeners();
+
+        // Debug mode for velocity logging
+        this.debug = true;
     }
 
     initRockPool() {
@@ -145,7 +148,7 @@ export default class RockThrowController {
         }
     }
 
-    // Update the trajectory line based on current mouse position - fixed to match actual physics
+    // Update the trajectory line based on current mouse position
     updateTrajectoryLine() {
         if (!this.trajectoryLine) return;
 
@@ -166,25 +169,23 @@ export default class RockThrowController {
                 // Calculate throw direction and distance
                 const throwDirection = new THREE.Vector3().subVectors(targetPoint, this.throwPosition);
                 const distance = throwDirection.length();
+
+                if (this.debug && false) {
+                    console.log(`Target distance: ${distance.toFixed(2)} at (${targetPoint.x.toFixed(2)}, ${targetPoint.y.toFixed(2)}, ${targetPoint.z.toFixed(2)})`);
+                }
+
                 throwDirection.normalize();
 
-                // IMPROVED: Match trajectory prediction with actual throw physics
-                // Using the same formula as in throwRock()
-                const distanceFactor = Math.min(distance, 10) / 10;
-                const baseVelocity = this.throwVelocity * (1 + distanceFactor * 2);
-                const velocityVector = throwDirection.clone().multiplyScalar(baseVelocity);
-                velocityVector.y += 0.8 + (distance * 0.15);
-
-                if (distance > 5) {
-                    velocityVector.x *= 1 + (distance * 0.05);
-                    velocityVector.z *= 1 + (distance * 0.05);
-                }
+                // GREATLY IMPROVED: Use linear scaling based on distance
+                // This ensures velocity correctly increases with distance
+                // Calculate velocity 
+                const velocityVector = this.calculateVelocityForTarget(throwDirection, distance);
 
                 // Get predicted trajectory points
                 const trajectoryPoints = this.predictTrajectory(
                     this.throwPosition,
                     velocityVector,
-                    30 // Number of points
+                    50 // Increased number of points for better visualization
                 );
 
                 // Update line geometry
@@ -202,18 +203,42 @@ export default class RockThrowController {
         }
     }
 
-    // Improved predictTrajectory to better match actual physics
-    predictTrajectory(startPosition, velocity, steps = 30) {
+    // Calculate velocity vector for a given target
+    calculateVelocityForTarget(direction, distance) {
+        // OPTIMIZED: Better velocity scaling formula
+        // Linear scaling based on distance with minimum and maximum caps
+        const minVelocity = this.throwVelocity; // Base velocity for close targets
+        const maxVelocity = this.throwVelocity * 5; // Maximum velocity for far targets
+        const maxDistance = 15; // Distance at which we reach max velocity
+
+        // Linear interpolation between min and max velocity based on distance
+        const scaleVelocity = minVelocity + Math.min(distance / maxDistance, 1) * (maxVelocity - minVelocity);
+
+        // Create velocity vector along direction
+        const velocityVector = direction.clone().multiplyScalar(scaleVelocity);
+
+        // Add upward component based on distance
+        // More upward velocity for farther targets
+        velocityVector.y += Math.min(0.5 + distance * 0.15, 3.0);
+
+        if (this.debug && false) {
+            console.log(`Calculated velocity: ${velocityVector.length().toFixed(2)} for distance: ${distance.toFixed(2)}`);
+            console.log(`Velocity components: (${velocityVector.x.toFixed(2)}, ${velocityVector.y.toFixed(2)}, ${velocityVector.z.toFixed(2)})`);
+        }
+
+        return velocityVector;
+    }
+
+    // Predict trajectory based on starting position and velocity
+    predictTrajectory(startPosition, velocity, steps = 50) {
         const points = [];
         const position = startPosition.clone();
         const vel = velocity.clone();
-        const gravity = new THREE.Vector3(0, -9.81, 0);
-        const drag = 0.5; // Match this to the rock drag coefficient
-
-        // IMPROVED: Use smaller time steps for higher velocities
-        // This ensures the prediction matches actual physics better
-        const initialVelocity = vel.length();
-        const timeStep = initialVelocity > 10 ? 0.05 : 0.1;
+        // REDUCED: Match the reduced gravity from the Rock class
+        const gravity = new THREE.Vector3(0, -4.9, 0);
+        // REDUCED: Match the reduced drag from Rock class  
+        const drag = 0.05;
+        const timeStep = 0.1;
 
         // Add starting point
         points.push(position.clone());
@@ -278,28 +303,15 @@ export default class RockThrowController {
             // Calculate distance to target - this will determine throw strength
             const distance = throwDirection.length();
 
+            // Log target information
+            console.log(`Throwing rock at target: (${targetPoint.x.toFixed(2)}, ${targetPoint.y.toFixed(2)}, ${targetPoint.z.toFixed(2)})`);
+            console.log(`Target distance: ${distance.toFixed(2)}`);
+
             // Normalize the direction vector
             throwDirection.normalize();
 
-            // IMPROVED: Use a stronger base velocity multiplier to match trajectory
-            // Using a non-linear scale to handle long distances better
-            const distanceFactor = Math.min(distance, 10) / 10; // Cap scaling at distance of 10
-            const baseVelocity = this.throwVelocity * (1 + distanceFactor * 2);
-
-            // Apply velocity along the direction
-            const velocityVector = throwDirection.multiplyScalar(baseVelocity);
-
-            // IMPROVED: Add appropriate upward component for better trajectories
-            // Scale with distance to get better arc for far throws
-            velocityVector.y += 0.8 + (distance * 0.15);
-
-            // IMPROVED: For very long distances, we need more boost
-            // This helps ensure the rock actually reaches far targets
-            if (distance > 5) {
-                // Add more to the X and Z components to maintain direction but boost power
-                velocityVector.x *= 1 + (distance * 0.05);
-                velocityVector.z *= 1 + (distance * 0.05);
-            }
+            // Use the common velocity calculation function
+            const velocityVector = this.calculateVelocityForTarget(throwDirection, distance);
 
             // Apply velocity to rock
             rock.setVelocity(velocityVector.x, velocityVector.y, velocityVector.z);
@@ -307,10 +319,8 @@ export default class RockThrowController {
             // Add to active rocks and scene
             this.activeRocks.push(rock);
             this.scene.add(rock.mesh);
-
-            console.log('Rock thrown at:', targetPoint, 'Distance:', distance, 'Velocity:', velocityVector);
         } else {
-            console.log('Target out of water bounds:', targetPoint);
+            console.log('Target out of bounds:', targetPoint);
         }
     }
 
