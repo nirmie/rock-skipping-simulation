@@ -2,7 +2,6 @@ import { Pane } from "tweakpane";
 import * as THREE from "three";
 // Import the ground textures
 import { sandTexture, riverbedTexture } from './objects/ground';
-import { label } from "three/tsl";
 
 export function setupUI({ waterResolution, water, ground }) {
   const pane = new Pane();
@@ -12,57 +11,12 @@ export function setupUI({ waterResolution, water, ground }) {
 
   if (water.simulationMaterial) {
     const simFolder = waterFolder.addFolder({ title: 'Simulation' });
-    simFolder.addBinding(water.simulationMaterial.uniforms.uViscosity, 'value', { min: 0, max: 0.1, step: 0.001, label: 'Viscosity' });
-    simFolder.addBinding(water.simulationMaterial.uniforms.uDisturbanceAmount, 'value', { min: 0, max: 0.1, step: 0.001, label: 'disturbance amount' });
-    simFolder.addBinding(water.simulationMaterial.uniforms.uDisturbanceAmount, 'value', { min: 0.001, max: 0.1, step: 0.001, label: 'ripple radius' });
+    simFolder.addBinding(water.simulationMaterial.uniforms.uViscosity, 'value', { min: 0, max: 0.3, step: 0.001, label: 'Viscosity' });
+    simFolder.addBinding(water.simulationMaterial.uniforms.uDisturbanceAmount, 'value', { min: 0.01, max: 0.6, step: 0.001, label: 'disturbance amount' });
     simFolder.addBinding(water.material.uniforms.uHeightScale, 'value', { min: 0, max: 1.0, step: 0.01, label: 'Height Scale' });
   } else {
     console.warn("Water object does not have simulationMaterial for UI setup.");
   }
-
-  //   const geometryFolder = waterFolder.addFolder({ title: 'Geometry' });
-
-  //   geometryFolder.addBinding(waterResolution, 'size', { min: 2, max: 1024, step: 2, label: 'Resolution' }).on('change', ({ value }) => {
-  //     console.log(value);
-  //     // Update geometry with new dimensions
-  //     const newGeometry = new THREE.PlaneGeometry(
-  //       2,
-  //       2,
-  //       waterResolution.size,
-  //       waterResolution.size
-  //     );
-  //     water.geometry.dispose();
-  //     water.geometry = newGeometry;
-  //   });
-
-  // // Waves
-  // const wavesFolder = waterFolder.addFolder({ title: "Waves" });
-  // wavesFolder.addBinding(water.material.uniforms.uWavesAmplitude, "value", {
-  //   min: 0,
-  //   max: 0.1,
-  //   label: "Amplitude",
-  // });
-  // wavesFolder.addBinding(water.material.uniforms.uWavesFrequency, "value", {
-  //   min: 0.1,
-  //   max: 10,
-  //   label: "Frequency",
-  // });
-  // wavesFolder.addBinding(water.material.uniforms.uWavesPersistence, "value", {
-  //   min: 0,
-  //   max: 1,
-  //   label: "Persistence",
-  // });
-  // wavesFolder.addBinding(water.material.uniforms.uWavesLacunarity, "value", {
-  //   min: 0,
-  //   max: 3,
-  //   label: "Lacunarity",
-  // });
-  // wavesFolder.addBinding(water.material.uniforms.uWavesIterations, "value", {
-  //   min: 1,
-  //   max: 10,
-  //   step: 1,
-  //   label: "Iterations",
-  // });
 
   // Color
   const colorFolder = waterFolder.addFolder({ title: "Color" });
