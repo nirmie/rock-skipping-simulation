@@ -11,9 +11,8 @@ export function setupUI({ waterResolution, water, ground }) {
 
   if (water.simulationMaterial) {
     const simFolder = waterFolder.addFolder({ title: 'Simulation' });
-    simFolder.addBinding(water.simulationMaterial.uniforms.uViscosity, 'value', { min: 0, max: 0.1, step: 0.001, label: 'Viscosity' });
-    simFolder.addBinding(water.simulationMaterial.uniforms.uDisturbanceAmount, 'value', { min: 0, max: 0.1, step: 0.001, label: 'disturbance amount' });
-    simFolder.addBinding(water.simulationMaterial.uniforms.uDisturbanceAmount, 'value', { min: 0.001, max: 0.1, step: 0.001, label: 'ripple radius' });
+    simFolder.addBinding(water.simulationMaterial.uniforms.uViscosity, 'value', { min: 0, max: 0.3, step: 0.001, label: 'Viscosity' });
+    simFolder.addBinding(water.simulationMaterial.uniforms.uDisturbanceAmount, 'value', { min: 0.01, max: 0.6, step: 0.001, label: 'disturbance amount' });
     simFolder.addBinding(water.material.uniforms.uHeightScale, 'value', { min: 0, max: 1.0, step: 0.01, label: 'Height Scale' });
   } else {
     console.warn("Water object does not have simulationMaterial for UI setup.");

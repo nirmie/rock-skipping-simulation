@@ -37,11 +37,11 @@ export default class Water extends THREE.Mesh {
                 tPrev: { value: this.renderTarget1.texture }, // Start reading from RT1
                 uResolution: { value: new THREE.Vector2(this.simulationResolution, this.simulationResolution) },
                 uDelta: { value: 0.0 },
-                uViscosity: { value: 0.15 },
+                uViscosity: { value: 0.1 },
                 uAspect: { value: aspectRatio },
                 uApplyDisturbance: { value: false },
                 uDisturbancePos: { value: new THREE.Vector2() },
-                uDisturbanceAmount: { value: 0.008 },
+                uDisturbanceAmount: { value: 0.2 },
                 uDisturbanceRadius: { value: 0.01 },
             }
         });
