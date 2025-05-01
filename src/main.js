@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'; // Corrected import path
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import Water from './objects/water';
 import Ground from './objects/ground';
+import RockThrowController from './controllers/rockThrowController';
 import { setupUI } from './ui';
 
 // Animation
@@ -21,17 +22,12 @@ renderer.shadowMap.enabled = true; // Enable shadow maps
 renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
 document.body.appendChild(renderer.domElement);
 
-// Raycasting Setup
-const raycaster = new THREE.Raycaster();
-const pointer = new THREE.Vector2();
-
 // Environment map
 const cubeTextureLoader = new THREE.CubeTextureLoader();
 cubeTextureLoader.setPath('/sunsetEnv/'); // Make sure this path is correct relative to your public folder
 const environmentMapPromise = cubeTextureLoader.loadAsync([ // Use loadAsync
     'px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png'
 ]);
-
 
 // --- Water Object ---
 // Initialize water variable, will be assigned after env map loads
@@ -41,6 +37,9 @@ let water;
 const ground = new Ground({ planeSize: waterPlaneSize }); // Pass size to ground
 ground.receiveShadow = true; // Ground should receive shadows
 scene.add(ground);
+
+// --- Rock Throw Controller ---
+let rockThrowController;
 
 // --- Async Initialization ---
 async function initializeScene() {
@@ -58,8 +57,21 @@ async function initializeScene() {
         water.castShadow = true; // Water surface can cast shadows (optional, might be expensive)
         scene.add(water);
 
-        // Setup UI after water and ground are created
-        setupUI({ waterResolution, water, ground }); // Pass both instances
+        // Initialize Rock Throw Controller after water is created
+        rockThrowController = new RockThrowController({
+            scene: scene,
+            camera: camera,
+            water: water,
+            waterPlaneSize: waterPlaneSize,
+            domElement: renderer.domElement,
+            throwVelocity: 10.0
+        });
+
+        // Setup UI after water and ground are created (without rock controller)
+        setupUI({ waterResolution, water, ground });
+
+        // Show instructions
+        showInstructions();
 
         // Start animation loop only after everything is loaded
         animate();
@@ -75,29 +87,60 @@ async function initializeScene() {
             planeSize: waterPlaneSize
         });
         scene.add(water);
+
+        // Initialize Rock Throw Controller with fallback
+        rockThrowController = new RockThrowController({
+            scene: scene,
+            camera: camera,
+            water: water,
+            waterPlaneSize: waterPlaneSize,
+            domElement: renderer.domElement,
+            throwVelocity: 5.0
+        });
+
         // Ensure ground is passed to setupUI even in error case if needed
         setupUI({ waterResolution, water, ground });
-        animate(); // Still start animation maybe?
+
+        // Show instructions
+        showInstructions();
+
+        animate(); // Still start animation
     }
 }
 
+// Display instructions for the user
+function showInstructions() {
+    const instructions = document.createElement('div');
+    instructions.style.position = 'absolute';
+    instructions.style.top = '20px';
+    instructions.style.left = '20px';
+    instructions.style.color = 'white';
+    instructions.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    instructions.style.padding = '10px';
+    instructions.style.borderRadius = '5px';
+    instructions.style.fontFamily = 'Arial, sans-serif';
+    instructions.style.fontSize = '14px';
+    instructions.style.pointerEvents = 'none'; // Don't interfere with mouse events
+
+    instructions.innerHTML = `
+        <h3 style="margin: 0 0 10px 0">Rock Skipping Simulation</h3>
+        <p style="margin: 5px 0">Move your mouse to aim at the water</p>
+        <p style="margin: 5px 0">Press SPACEBAR to throw a rock</p>
+        <p style="margin: 5px 0">Use mouse to rotate camera</p>
+        <p style="margin: 5px 0">Scroll to zoom in/out</p>
+    `;
+
+    document.body.appendChild(instructions);
+}
 
 // Camera position
-camera.position.set(0, 1.5, -6.8); // Adjusted camera for better view potentially
-// camera.position.set(0, 0, 0);
+camera.position.set(0, 1.5, -6.8); // Adjusted camera for better view
 // Controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 0, 1); // Point controls towards the water center
 controls.enableDamping = true;
 
-// // --- Lights --- 
-// // Remove or reduce ambient light if directional is strong
-// scene.remove(scene.getObjectOfType(THREE.AmbientLight)); // Remove previous ambient light
-// const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); // Lower intensity ambient
-// scene.add(ambientLight);
-
 // Strong Directional Light (Sun)
-// scene.remove(scene.getObjectOfType(THREE.DirectionalLight)); // Remove previous directional light
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5); // Lowered intensity
 directionalLight.position.set(2, 5, 3); // Adjust position/direction
 directionalLight.castShadow = true; // Enable shadow casting
@@ -114,11 +157,6 @@ directionalLight.shadow.camera.top = waterPlaneSize.height;
 directionalLight.shadow.camera.bottom = -waterPlaneSize.height;
 
 scene.add(directionalLight);
-// Optional: Add a helper to visualize the shadow camera
-// const shadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
-// scene.add(shadowHelper);
-// --- End Lights ---
-
 
 let lastTime = 0;
 const lightDirection = new THREE.Vector3(); // Reusable vector
@@ -162,6 +200,11 @@ function animate() {
         ground.update(elapsedTime); // Update ground time uniform if needed
     }
 
+    // Update rock throwing physics if controller exists
+    if (rockThrowController) {
+        rockThrowController.update(deltaTime);
+    }
+
     renderer.render(scene, camera); // Render main scene
 }
 
@@ -173,33 +216,5 @@ window.addEventListener('resize', () => {
     // Note: Render targets in Water class don't need resizing here
 });
 
-// Click Event Listener - Updated to call water.addDisturbance
-window.addEventListener('pointerdown', (event) => {
-    if (!water) return; // Don't raycast if water isn't loaded yet
-
-    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-    pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    raycaster.setFromCamera(pointer, camera);
-    const intersects = raycaster.intersectObject(water); // Raycast against the water mesh
-
-    if (intersects.length > 0) {
-        const intersectionPoint = intersects[0].point;
-        const uv = intersects[0].uv; // Use the UV coordinates from the intersection
-
-        // Check if UV exists (it should for PlaneGeometry)
-        if (uv) {
-            // Add disturbance using the UV coordinates directly
-            water.addDisturbance(uv, 0.2); // Adjust intensity (0.2) as needed
-            console.log('Adding disturbance at UV:', uv.x, uv.y);
-        } else {
-            // Fallback: Convert world XZ to UV (less accurate if plane isn't perfectly aligned)
-            const uvX = (intersectionPoint.x / waterPlaneSize.width) + 0.5;
-            const uvY = (intersectionPoint.z / waterPlaneSize.height) + 0.5; // Z maps to V
-            water.addDisturbance(new THREE.Vector2(uvX, uvY), 0.2);
-            console.log('Adding disturbance via fallback UV calculation:', uvX, uvY);
-        }
-    }
-});
-
-// --- Start Initialization ---
+// Start initialization
 initializeScene();
