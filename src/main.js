@@ -68,7 +68,8 @@ async function initializeScene() {
         });
 
         // Setup UI after water and ground are created (without rock controller)
-        setupUI({ waterResolution, water, ground });
+        setupUI({ waterResolution, water, ground, rockThrowController });
+
 
         // Show instructions
         showInstructions();
@@ -99,7 +100,8 @@ async function initializeScene() {
         });
 
         // Ensure ground is passed to setupUI even in error case if needed
-        setupUI({ waterResolution, water, ground });
+        setupUI({ waterResolution, water, ground, rockThrowController });
+
 
         // Show instructions
         showInstructions();

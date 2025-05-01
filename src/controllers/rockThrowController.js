@@ -144,6 +144,7 @@ export default class RockThrowController {
     onKeyDown(event) {
         // Check if spacebar was pressed
         if (event.key === ' ' || event.code === 'Space') {
+            event.preventDefault(); // prevent scrolling
             this.throwRock();
         }
     }
