@@ -42,7 +42,7 @@ export default class Water extends THREE.Mesh {
                 uApplyDisturbance: { value: false },
                 uDisturbancePos: { value: new THREE.Vector2() },
                 uDisturbanceAmount: { value: 0.2 },
-                uDisturbanceRadius: { value: 0.01 },
+                uDisturbanceRadius: { value: 0.004 },
             }
         });
 
@@ -86,7 +86,7 @@ export default class Water extends THREE.Mesh {
         this.causticsCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
         this.causticsQuad = new THREE.Mesh(
             new THREE.PlaneGeometry(2, 2),
-            this.causticsMaterial
+            this.causticsMaterdisturbanceial
         );
         this.causticsScene.add(this.causticsQuad);
         // --- End Caustics Setup ---

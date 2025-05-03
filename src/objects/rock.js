@@ -260,7 +260,7 @@ export default class Rock {
 
 
                     // Add disturbance to water
-                    water.addDisturbance(new THREE.Vector2(uvX, uvY), disturbanceIntensity);
+                    water.addDisturbance(new THREE.Vector2(uvX, uvY), water.simulationMaterial.uniforms.uDisturbanceAmount.value);
                     console.log(`Creating ripple at UV (${uvX.toFixed(2)}, ${uvY.toFixed(2)}) with intensity ${disturbanceIntensity.toFixed(3)}`);
                 }
             } else {
@@ -283,7 +283,7 @@ export default class Rock {
                     const uvY = (-collisionPoint.z / this.options.waterPlaneSize.height) + 0.5;
 
                     // Slightly bigger disturbance for sinking
-                    water.addDisturbance(new THREE.Vector2(uvX, uvY), disturbanceIntensity);
+                    water.addDisturbance(new THREE.Vector2(uvX, uvY), water.simulationMaterial.uniforms.uDisturbanceAmount.value);
                     console.log(`Rock sinking at UV (${uvX.toFixed(2)}, ${uvY.toFixed(2)})`);
                 }
 

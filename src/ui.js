@@ -18,6 +18,10 @@ export function setupUI({ waterResolution, water, ground, rockThrowController })
     simFolder.addBinding(water.simulationMaterial.uniforms.uDisturbanceAmount, 'value', {
       min: 0.01, max: 0.6, step: 0.001, label: 'disturbance amount'
     });
+    // Bind disturbance radius control
+    simFolder.addBinding(water.simulationMaterial.uniforms.uDisturbanceRadius, 'value', {
+      min: 0.001, max: 0.05, step: 0.001, label: 'disturbance radius'
+    });
     // Bind height scale control
     simFolder.addBinding(water.material.uniforms.uHeightScale, 'value', {
       min: 0, max: 1.0, step: 0.01, label: 'Height Scale'
