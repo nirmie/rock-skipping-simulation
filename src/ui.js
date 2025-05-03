@@ -16,7 +16,7 @@ export function setupUI({ waterResolution, water, ground, rockThrowController })
     });
     // Bind disturbance amount control
     simFolder.addBinding(water.simulationMaterial.uniforms.uDisturbanceAmount, 'value', {
-      min: 0.01, max: 0.6, step: 0.001, label: 'disturbance amount'
+      min: 0.5, max: 2, step: 0.1, label: 'disturbance amount'
     });
     // Bind disturbance radius control
     simFolder.addBinding(water.simulationMaterial.uniforms.uDisturbanceRadius, 'value', {

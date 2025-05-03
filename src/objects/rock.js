@@ -216,9 +216,7 @@ export default class Rock {
             // Debug log the collision with velocity details
             // console.log(`Rock collision at (${collisionPoint.x.toFixed(2)}, ${collisionPoint.y.toFixed(2)}, ${collisionPoint.z.toFixed(2)})`);
             // console.log(`Impact velocity: ${impactVelocity.toFixed(2)} - Components: (${this.velocity.x.toFixed(2)}, ${this.velocity.y.toFixed(2)}, ${this.velocity.z.toFixed(2)})`);
-            const disturbanceIntensity = Math.min(
-                0.01 + Math.pow(impactVelocity, 2.5) * this.options.radius * this.options.radius
-            );
+            const disturbanceIntensity = 0.01 + Math.pow(impactVelocity, 2.5) * this.options.radius * this.options.radius;
 
             console.log('Angle of incidence:', (180 / Math.PI) * angleOfIncidence.toFixed(2), ' Max angle:', this.options.skipAngleThreshold);
             // Only skip if velocity is above minimum threshold and we haven't exceeded max skips
@@ -260,7 +258,7 @@ export default class Rock {
 
 
                     // Add disturbance to water
-                    water.addDisturbance(new THREE.Vector2(uvX, uvY), water.simulationMaterial.uniforms.uDisturbanceAmount.value);
+                    water.addDisturbance(new THREE.Vector2(uvX, uvY), water.simulationMaterial.uniforms.uDisturbanceAmount.value * disturbanceIntensity);
                     console.log(`Creating ripple at UV (${uvX.toFixed(2)}, ${uvY.toFixed(2)}) with intensity ${disturbanceIntensity.toFixed(3)}`);
                 }
             } else {
@@ -283,7 +281,7 @@ export default class Rock {
                     const uvY = (-collisionPoint.z / this.options.waterPlaneSize.height) + 0.5;
 
                     // Slightly bigger disturbance for sinking
-                    water.addDisturbance(new THREE.Vector2(uvX, uvY), water.simulationMaterial.uniforms.uDisturbanceAmount.value);
+                    water.addDisturbance(new THREE.Vector2(uvX, uvY), water.simulationMaterial.uniforms.uDisturbanceAmount.value * disturbanceIntensity);
                     console.log(`Rock sinking at UV (${uvX.toFixed(2)}, ${uvY.toFixed(2)})`);
                 }
 

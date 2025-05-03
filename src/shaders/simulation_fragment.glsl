@@ -11,6 +11,7 @@ uniform float uAspect;    // Aspect ratio (width / height) of the physical plane
 uniform bool uApplyDisturbance;
 uniform vec2 uDisturbancePos; // UV coordinates (0-1)
 uniform float uDisturbanceAmount;
+uniform float uDisturbanceIntensity;
 uniform float uDisturbanceRadius;
 
 varying vec2 vUv;
@@ -37,7 +38,7 @@ void main() {
     float aspectSq = uAspect * uAspect;
     float laplacian_x = (H_l + H_r - 2.0 * height) / aspectSq; // Scaled horizontal contribution
     float laplacian_z = (H_d + H_u - 2.0 * height);           // Vertical contribution
-    float laplacian = laplacian_x + laplacian_z; 
+    float laplacian = laplacian_x + laplacian_z;
     // Update velocity based on acceleration (proportional to laplacian)
     // The uDelta factor scales the simulation speed
     float newVelocity = velocity + laplacian * uDelta;
@@ -62,7 +63,7 @@ void main() {
         // Calculate distance from disturbance center (in UV space)
         float dist = distance(vUv, uDisturbancePos);
         float radius = uDisturbanceRadius; // Radius of the disturbance effect
-        float strength = smoothstep(radius, 0.0, dist) * uDisturbanceAmount;
+        float strength = smoothstep(radius, 0.0, dist) * uDisturbanceAmount * uDisturbanceIntensity;
 
         // Add disturbance directly to height (can also affect velocity)
         newHeight += strength;

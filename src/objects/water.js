@@ -41,7 +41,8 @@ export default class Water extends THREE.Mesh {
                 uAspect: { value: aspectRatio },
                 uApplyDisturbance: { value: false },
                 uDisturbancePos: { value: new THREE.Vector2() },
-                uDisturbanceAmount: { value: 0.2 },
+                uDisturbanceAmount: { value: 1 },
+                uDisturbanceIntensity: { value: 1 },
                 uDisturbanceRadius: { value: 0.004 },
             }
         });
@@ -86,7 +87,7 @@ export default class Water extends THREE.Mesh {
         this.causticsCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
         this.causticsQuad = new THREE.Mesh(
             new THREE.PlaneGeometry(2, 2),
-            this.causticsMaterdisturbanceial
+            this.causticsMaterial
         );
         this.causticsScene.add(this.causticsQuad);
         // --- End Caustics Setup ---
@@ -163,7 +164,8 @@ export default class Water extends THREE.Mesh {
             const disturbance = this.disturbanceQueue.shift();
             this.simulationMaterial.uniforms.uApplyDisturbance.value = true;
             this.simulationMaterial.uniforms.uDisturbancePos.value.copy(disturbance.position);
-            this.simulationMaterial.uniforms.uDisturbanceAmount.value = disturbance.amount;
+            // Use the disturbance intensity from the rock without overriding the global amount
+            this.simulationMaterial.uniforms.uDisturbanceIntensity.value = disturbance.amount;
         } else {
             this.simulationMaterial.uniforms.uApplyDisturbance.value = false;
         }
