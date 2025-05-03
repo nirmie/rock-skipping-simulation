@@ -13,6 +13,7 @@ export default class Rock {
             minSkipVelocity: options.minSkipVelocity || 0.8, // Min velocity needed to skip
             waterPlaneSize: options.waterPlaneSize || { width: 2, height: 2 },
             skipsBeforeSink: options.skipsBeforeSink || 5, // Maximum skips before sinking
+            skipAngleThreshold: options.skipAngleThreshold || 30, // Angle threshold for skipping converted to radians
         };
 
         // Physics properties
@@ -205,12 +206,23 @@ export default class Rock {
             // Calculate collision impact velocity
             const impactVelocity = this.velocity.length();
 
+            // calculating angle of incidence with water
+            const waterNormal = new THREE.Vector3(0, 1, 0); // Normal of the water surface
+            const velocityDirection = this.velocity.clone().normalize();
+            // since angle from acos is just normal to velocity, we subtract it from PI/2
+            const angleOfIncidence = Math.abs(Math.PI / 2 - Math.acos(velocityDirection.dot(waterNormal)));
+
+
             // Debug log the collision with velocity details
             // console.log(`Rock collision at (${collisionPoint.x.toFixed(2)}, ${collisionPoint.y.toFixed(2)}, ${collisionPoint.z.toFixed(2)})`);
             // console.log(`Impact velocity: ${impactVelocity.toFixed(2)} - Components: (${this.velocity.x.toFixed(2)}, ${this.velocity.y.toFixed(2)}, ${this.velocity.z.toFixed(2)})`);
+            const disturbanceIntensity = Math.min(
+                0.01 + Math.pow(impactVelocity, 2.5) * this.options.radius * this.options.radius
+            );
 
+            console.log('Angle of incidence:', (180 / Math.PI) * angleOfIncidence.toFixed(2), ' Max angle:', this.options.skipAngleThreshold);
             // Only skip if velocity is above minimum threshold and we haven't exceeded max skips
-            if (impactVelocity > this.options.minSkipVelocity && this.skipCount < this.options.skipsBeforeSink) {
+            if (angleOfIncidence < (Math.PI / 180) * this.options.skipAngleThreshold && impactVelocity > this.options.minSkipVelocity && this.skipCount < this.options.skipsBeforeSink) {
                 // Increment skip counter
                 this.skipCount++;
                 // console.log(`Skip #${this.skipCount}`);
@@ -236,9 +248,7 @@ export default class Rock {
                 );
 
                 // Intensity based on impact velocity and rock size
-                const disturbanceIntensity = Math.min(
-                    0.01 + Math.pow(impactVelocity, 2.5) * this.options.radius * this.options.radius
-                );
+
 
                 // Create water disturbance at collision point
                 if (water) {
@@ -254,9 +264,17 @@ export default class Rock {
                     console.log(`Creating ripple at UV (${uvX.toFixed(2)}, ${uvY.toFixed(2)}) with intensity ${disturbanceIntensity.toFixed(3)}`);
                 }
             } else {
+                let sinkReason = "";
+                if (impactVelocity <= this.options.minSkipVelocity) {
+                    sinkReason = "insufficient velocity";
+                } else if (Math.abs(angleOfIncidence) >= this.options.skipAngleThreshold  * (Math.PI / 180)) {
+                    sinkReason = "angle too steep";
+                } else {
+                    sinkReason = "max skips exceeded";
+                }
                 // Rock has sunk
                 this.hasSunk = true;
-                console.log('Rock has sunk');
+                console.log(`Rock has sunk due to ${sinkReason}`);
 
                 // Create final splash disturbance
                 if (water) {
@@ -281,13 +299,14 @@ export default class Rock {
         // Check if rock has gone out of bounds
         const halfWidth = this.options.waterPlaneSize.width / 2;
         const halfHeight = this.options.waterPlaneSize.height / 2;
+        const groundLevel = -0.5;
 
         if (
             this.position.x < -halfWidth ||
             this.position.x > halfWidth ||
             this.position.z < -halfHeight ||
             this.position.z > halfHeight ||
-            this.position.y < -0.6 || // Below ground
+            this.position.y < groundLevel - 0.1 || // Only deactivate if it's significantly below ground (error margin)
             Date.now() - this.startTime > 30000 // Maximum simulation time (30 seconds)
         ) {
             // console.log(`Rock out of bounds or timeout. Position: (${this.position.x.toFixed(2)}, ${this.position.y.toFixed(2)}, ${this.position.z.toFixed(2)})`);

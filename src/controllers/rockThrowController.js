@@ -12,6 +12,13 @@ export default class RockThrowController {
         // INCREASED: Higher base velocity for farther throws
         this.throwVelocity = options.throwVelocity || 12.0;
 
+        // Central options for all rocks
+        this.rockOptions = {
+            skipAngleThreshold: 30, // Default skip angle threshold
+            minSkipVelocity: 0.5,
+            elasticity: 0.5,
+            skipsBeforeSink: 3
+        };
         // DOM element for event listeners
         this.domElement = options.domElement || document.body;
 
@@ -55,7 +62,8 @@ export default class RockThrowController {
     initRockPool() {
         for (let i = 0; i < this.rockPoolSize; i++) {
             const rock = new Rock({
-                waterPlaneSize: this.waterPlaneSize
+                waterPlaneSize: this.waterPlaneSize,
+                ...this.rockOptions // Spread the central options
             });
             this.rockPool.push(rock);
         }
@@ -99,12 +107,15 @@ export default class RockThrowController {
             return this.rockPool.pop();
         } else {
             return new Rock({
-                waterPlaneSize: this.waterPlaneSize
+                waterPlaneSize: this.waterPlaneSize,
+                ...this.rockOptions // Spread the central options
             });
         }
     }
 
     returnRockToPool(rock) {
+        // Update rock options from the central options
+        Object.assign(rock.options, this.rockOptions);
         // Return a rock to the pool for reuse
         rock.reset();
         this.rockPool.push(rock);
@@ -179,7 +190,7 @@ export default class RockThrowController {
 
                 // GREATLY IMPROVED: Use linear scaling based on distance
                 // This ensures velocity correctly increases with distance
-                // Calculate velocity 
+                // Calculate velocity
                 const velocityVector = this.calculateVelocityForTarget(throwDirection, distance);
 
                 // Get predicted trajectory points
@@ -237,7 +248,7 @@ export default class RockThrowController {
         const vel = velocity.clone();
         // REDUCED: Match the reduced gravity from the Rock class
         const gravity = new THREE.Vector3(0, -4.9, 0);
-        // REDUCED: Match the reduced drag from Rock class  
+        // REDUCED: Match the reduced drag from Rock class
         const drag = 0.05;
         const timeStep = 0.1;
 
@@ -323,6 +334,18 @@ export default class RockThrowController {
         } else {
             console.log('Target out of bounds:', targetPoint);
         }
+    }
+
+    updateAllRocksOptions() {
+        // Update all rocks in pool
+        this.rockPool.forEach(rock => {
+            Object.assign(rock.options, this.rockOptions);
+        });
+
+        // Update all active rocks
+        this.activeRocks.forEach(rock => {
+            Object.assign(rock.options, this.rockOptions);
+        });
     }
 
     update(deltaTime) {
