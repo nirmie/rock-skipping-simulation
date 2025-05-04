@@ -4,8 +4,6 @@ import Water from './objects/water';
 import Ground from './objects/ground';
 import RockThrowController from './controllers/rockThrowController';
 import { setupUI } from './ui';
-import { Vector2Uniform } from 'three/src/renderers/common/Uniform.js';
-import { Wireframe } from 'three/examples/jsm/Addons.js';
 
 /* Gravity, size, weight, all should be in real world units M
  water disturbance should be affected by velocity and mass (force)
@@ -32,14 +30,26 @@ renderer.toneMapping = THREE.NeutralToneMapping;
 renderer.toneMappingExposure = 1.2;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+// Make sure the canvas fills the viewport with no margin or padding
+renderer.domElement.style.position = 'absolute';
+renderer.domElement.style.top = '0';
+renderer.domElement.style.left = '0';
+renderer.domElement.style.width = '100%';
+renderer.domElement.style.height = '100%';
+renderer.domElement.style.display = 'block';
+renderer.domElement.style.margin = '0';
+renderer.domElement.style.padding = '0';
 document.body.appendChild(renderer.domElement);
 
 // Environment map setup: Load the environment map to be used for lighting and reflections
 const cubeTextureLoader = new THREE.CubeTextureLoader();
+// cubeTextureLoader.setPath('/');
+// const environmentMapPromise = cubeTextureLoader.loadAsync('sky.hdr')
+// cubeTextureLoader.setPath('/water_scene/');
+// const environmentMapPromise = cubeTextureLoader.loadAsync([ 'px.jpg', 'nx.jpg', 'py.jpg', 'ny.jpg', 'pz.jpg', 'nz.jpg']);
 cubeTextureLoader.setPath('/sunsetEnv/');
-const environmentMapPromise = cubeTextureLoader.loadAsync([
-    'px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png'
-]);
+ const environmentMapPromise = cubeTextureLoader.loadAsync([ 'px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png']);
 
 // Set up camera position and controls
 camera.position.set(0, 1.5, -(waterPlaneSize.height || 10) / 2 - 2);

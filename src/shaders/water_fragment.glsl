@@ -19,11 +19,13 @@ varying vec3 vWorldPosition;
 varying vec3 vNormal;
 
 void main() {
-  vec3 viewDirection = normalize(vWorldPosition - cameraPosition);
-  vec3 reflected = reflect(viewDirection, vNormal);
-  // reflected.x *= -1.0;
+vec3 viewDirection = normalize(vWorldPosition - cameraPosition);
+vec3 reflected = reflect(viewDirection, vNormal);
+// reflected.x *= -1.0; // Uncomment this
+reflected.z *= -1.0; // Add this line to flip the Z component as well
+reflected.y *= -1.0; // Add this line to flip the Y component as well
 
-  vec3 reflectionColor = textureCube(uEnvironmentMap, reflected).rgb;
+vec3 reflectionColor = textureCube(uEnvironmentMap, reflected).rgb;
 
   float fresnel =
       pow(1.0 - clamp(dot(viewDirection, vNormal), 0.0, 1.0), uFresnelPower) *
