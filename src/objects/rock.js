@@ -4,8 +4,7 @@ import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 const rockTypesPaths = {
     cracked_boulder: 'rock_textures/cracked_boulder/cracked_boulder',
     coast: 'rock_textures/coast/coast',
-    sandstone: 'rock_textures/coast/coast',
-    // slate: 'rock_textures/slate'
+    slate: 'rock_textures/slate/slate',
 };
 
 const rockTypes = {
@@ -21,11 +20,12 @@ const rockTypes = {
         displacement: new THREE.TextureLoader().load(`${rockTypesPaths.coast}_disp.png`),
         normal: null
     },
-    // slate: {
-    //   diffuse: new THREE.TextureLoader().load(`${rockTypesPaths.slate}_diffuse.jpg`),
-    //   displacement: new THREE.TextureLoader().load(`${rockTypesPaths.slate}_disp.png`),
-    //   normal: null
-    // }
+    slate: {
+        // name: 'Coast',
+        diffuse: new THREE.TextureLoader().load(`${rockTypesPaths.slate}_diff.jpg`),
+        displacement: new THREE.TextureLoader().load(`${rockTypesPaths.slate}_disp.png`),
+        normal: null
+    },
 };
 
 // Configure all textures
@@ -68,10 +68,10 @@ export default class Rock {
             segments: options.segments || 12,
             mass: options.mass || 0.1, // kg
             dragCoefficient: options.dragCoefficient || 0.2,
-            elasticity: options.elasticity || 0.6, // Bounce factor
-            minSkipVelocity: options.minSkipVelocity || 0.8, // Min velocity needed to skip
+            elasticity: options.elasticity || 0.9, // Bounce factor
+            minSkipVelocity: options.minSkipVelocity || 0.4, // Min velocity needed to skip
             waterPlaneSize: options.waterPlaneSize || { width: 2, height: 2 },
-            skipsBeforeSink: options.skipsBeforeSink || 5, // Maximum skips before sinking
+            skipsBeforeSink: options.skipsBeforeSink || 6, // Maximum skips before sinking
             skipAngleThreshold: options.skipAngleThreshold || 30, // Angle threshold for skipping converted to radians
             floorDepth: options.floorDepth || -0.5,
 
@@ -103,8 +103,8 @@ export default class Rock {
         // Create a slightly deformed sphere for the rock
         const geometry = new THREE.SphereGeometry(
             this.options.radius,
-            this.options.segments * 2,
-            this.options.segments * 2
+            this.options.segments * 8,
+            this.options.segments * 8
         );
 
         // Deform vertices

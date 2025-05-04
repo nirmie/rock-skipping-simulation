@@ -1,7 +1,7 @@
 import { Pane } from "tweakpane";
 import * as THREE from "three";
 import { sandTexture, riverbedTexture } from "./objects/ground";
-import { rockTypes, activeRockType } from './objects/rock';
+import { rockTypes, activeRockType, setActiveRockType } from './objects/rock';
 
 
 export function setupUI({
@@ -253,20 +253,6 @@ export function setupUI({
       // Convert to title case for display
       rockTypeOptions[type] = type;
     });
-/*
-    groundFolder
-    .addBinding(uiState, "groundTexture", {
-      label: "Texture",
-      options: {
-        Riverbed: "Riverbed",
-        Sand: "Sand",
-      },
-    })
-    .on("change", ({ value }) => {
-      // Update the actual uniform when the selection changes
-      ground.material.uniforms.uTexture.value = textureMap[value];
-    });
-*/
 
     rockAppearanceFolder
       .addBinding(rockTypeConfig, "type", {
@@ -278,7 +264,7 @@ export function setupUI({
         rockThrowController.rockOptions.rockType = value;
 
         // Update global active rock type
-        activeRockType = value;
+        setActiveRockType(value);
 
         // Notify user that this will apply to new rocks
         console.log(
@@ -367,7 +353,7 @@ export function setupUI({
     rockFolder
       .addBinding(rockThrowController.rockOptions, "elasticity", {
         min: 0.1,
-        max: 0.9,
+        max: 2.0,
         step: 0.05,
         label: "Bounce Factor",
       })

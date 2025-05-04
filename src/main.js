@@ -15,9 +15,9 @@ import { Wireframe } from 'three/examples/jsm/Addons.js';
 
 // Animation setup: Create a clock to track time and set up water resolution and plane size
 const clock = new THREE.Clock();
-const waterResolution = 512;
-const waterPlaneSize = { width: 10, height: 25 };
-const floorDepth = -0.5;
+const waterResolution = 384;
+const waterPlaneSize = { width: 4, height: 20 };
+const floorDepth = -2;
 
 // Scene setup: Create the scene, camera, and renderer
 const scene = new THREE.Scene();
