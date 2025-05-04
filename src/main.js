@@ -21,9 +21,12 @@ const waterPlaneSize = { width: 10, height: 25 };
 // Scene setup: Create the scene, camera, and renderer
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.001, 100);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  powerPreference: "high-performance"
+});
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(devicePixelRatio);
+renderer.setPixelRatio(window.devicePixelRatio); // Fixed: Use window.devicePixelRatio
 renderer.toneMapping = THREE.NeutralToneMapping;
 renderer.toneMappingExposure = 1.2;
 renderer.shadowMap.enabled = true;
@@ -148,7 +151,7 @@ controls.enableDamping = true;
 
 // Set up lighting
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-directionalLight.position.set(2, 5, 3);
+directionalLight.position.set(-5, 3, -3);
 directionalLight.castShadow = true;
 
 directionalLight.shadow.mapSize.width = 1024;
@@ -214,9 +217,17 @@ function animate() {
 
 // Handle window resize
 window.addEventListener('resize', () => {
+    // Update camera aspect ratio
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // Update renderer size to match window exactly
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+
+    // Update water resolution if needed
+    if (water && water.updateResolution) {
+        water.updateResolution();
+    }
 });
 
 // Initialize the scene

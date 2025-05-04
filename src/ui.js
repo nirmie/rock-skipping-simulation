@@ -6,10 +6,10 @@ export function setupUI({ waterResolution, water, ground, rockThrowController })
   const pane = new Pane();
 
   // Create UI folder for water parameters
-  const waterFolder = pane.addFolder({ title: "Water" });
+  const waterFolder = pane.addFolder({ title: "Water", expanded: false });
 
   if (water.simulationMaterial) {
-    const simFolder = waterFolder.addFolder({ title: 'Simulation' });
+    const simFolder = pane.addFolder({ title: 'Simulation', expanded: false });
     // Bind viscosity control
     simFolder.addBinding(water.simulationMaterial.uniforms.uViscosity, 'value', {
       min: 0, max: 0.3, step: 0.001, label: 'Viscosity'
@@ -29,7 +29,7 @@ export function setupUI({ waterResolution, water, ground, rockThrowController })
   }
 
   // Create UI folder for water color controls
-  const colorFolder = waterFolder.addFolder({ title: "Color" });
+  const colorFolder = pane.addFolder({ title: "Color", expanded: false });
   colorFolder.addBinding(water.material.uniforms.uOpacity, "value", {
     min: 0, max: 1, step: 0.01, label: "Opacity"
   });
@@ -55,7 +55,7 @@ export function setupUI({ waterResolution, water, ground, rockThrowController })
   });
 
   // Create UI folder for Fresnel parameters
-  const fresnelFolder = waterFolder.addFolder({ title: "Fresnel" });
+  const fresnelFolder = pane.addFolder({ title: "Fresnel", expanded: false });
   fresnelFolder.addBinding(water.material.uniforms.uFresnelStrength, "value", {
     min: 0, max: 1, label: "Scale"
   });
@@ -64,7 +64,7 @@ export function setupUI({ waterResolution, water, ground, rockThrowController })
   });
 
   // Create UI folder for Caustics controls
-  const causticsFolder = pane.addFolder({ title: "Caustics" });
+  const causticsFolder = pane.addFolder({ title: "Caustics", expanded: false });
   if (water.causticsMaterial) {
     causticsFolder.addBinding(water.causticsMaterial.uniforms.uWaterDepth, "value", {
       min: 0.1, max: 2.0, step: 0.01, label: "Water Depth"
@@ -92,7 +92,7 @@ export function setupUI({ waterResolution, water, ground, rockThrowController })
   };
 
   // Create UI folder for ground parameters
-  const groundFolder = pane.addFolder({ title: "Ground" });
+  const groundFolder = pane.addFolder({ title: "Ground", expanded: false });
   if (ground.material) {
     // Bind to the intermediate string state
     groundFolder.addBinding(uiState, 'groundTexture', {
@@ -116,7 +116,7 @@ export function setupUI({ waterResolution, water, ground, rockThrowController })
   }
 
   // Exterior Ground parameters folder
-  const exGroundFolder = pane.addFolder({ title: "Exterior Ground" });
+  const exGroundFolder = pane.addFolder({ title: "Exterior Ground", expanded: false });
   if (ground.exteriorMaterial) {
     // Bind to the intermediate string state
     exGroundFolder.addBinding(uiState, 'exGroundTexture', {
@@ -140,7 +140,16 @@ export function setupUI({ waterResolution, water, ground, rockThrowController })
   }
 
   if (rockThrowController) {
-    const rockFolder = pane.addFolder({ title: "Rock Physics" });
+    const rockFolder = pane.addFolder({ title: "Rock Physics", expanded: false });
+
+    // Add initial velocity slider
+    rockFolder.addBinding(rockThrowController.rockOptions, 'throwVelocity', {
+      min: 1.0, max: 15.0, step: 0.5, label: 'Initial Velocity'
+    }).on('change', () => {
+        rockThrowController.updateAllRocksOptions();
+        // Update trajectory line when velocity changes
+        rockThrowController.updateTrajectoryLine();
+    });
 
     // Add skip angle threshold control
     rockFolder.addBinding(rockThrowController.rockOptions, 'skipAngleThreshold', {

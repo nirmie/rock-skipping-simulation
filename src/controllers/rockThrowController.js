@@ -9,16 +9,16 @@ export default class RockThrowController {
         this.water = options.water;
         this.waterPlaneSize = options.waterPlaneSize || { width: 2, height: 2 };
 
-        // INCREASED: Higher base velocity for farther throws
-        this.throwVelocity = options.throwVelocity || 12.0;
-
         // Central options for all rocks
         this.rockOptions = {
             skipAngleThreshold: 30, // Default skip angle threshold
             minSkipVelocity: 0.5,
             elasticity: 0.5,
-            skipsBeforeSink: 3
+            skipsBeforeSink: 3,
+            // ADDED: Move throwVelocity to rockOptions for UI control
+            throwVelocity: options.throwVelocity || 12.0
         };
+
         // DOM element for event listeners
         this.domElement = options.domElement || document.body;
 
@@ -219,8 +219,8 @@ export default class RockThrowController {
     calculateVelocityForTarget(direction, distance) {
         // OPTIMIZED: Better velocity scaling formula
         // Linear scaling based on distance with minimum and maximum caps
-        const minVelocity = this.throwVelocity; // Base velocity for close targets
-        const maxVelocity = this.throwVelocity * 5; // Maximum velocity for far targets
+        const minVelocity = this.rockOptions.throwVelocity; // Base velocity for close targets
+        const maxVelocity = this.rockOptions.throwVelocity * (1 + distance); // Maximum velocity for far targets
         const maxDistance = 15; // Distance at which we reach max velocity
 
         // Linear interpolation between min and max velocity based on distance
