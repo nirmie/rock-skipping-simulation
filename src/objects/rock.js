@@ -1,4 +1,64 @@
 import * as THREE from 'three';
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
+
+const rockTypesPaths = {
+    cracked_boulder: 'rock_textures/cracked_boulder/cracked_boulder',
+    coast: 'rock_textures/coast/coast',
+    sandstone: 'rock_textures/coast/coast',
+    // slate: 'rock_textures/slate'
+};
+
+const rockTypes = {
+    cracked_boulder: {
+        // name: 'Cracked Boulder',
+        diffuse: new THREE.TextureLoader().load(`${rockTypesPaths.cracked_boulder}_diff.jpg`),
+        displacement: new THREE.TextureLoader().load(`${rockTypesPaths.cracked_boulder}_disp.png`),
+        normal: null // Will be loaded async
+    },
+    coast: {
+        // name: 'Coast',
+        diffuse: new THREE.TextureLoader().load(`${rockTypesPaths.coast}_diff.jpg`),
+        displacement: new THREE.TextureLoader().load(`${rockTypesPaths.coast}_disp.png`),
+        normal: null
+    },
+    // slate: {
+    //   diffuse: new THREE.TextureLoader().load(`${rockTypesPaths.slate}_diffuse.jpg`),
+    //   displacement: new THREE.TextureLoader().load(`${rockTypesPaths.slate}_disp.png`),
+    //   normal: null
+    // }
+};
+
+// Configure all textures
+Object.keys(rockTypes).forEach(rockType => {
+    const textures = rockTypes[rockType];
+    const basePath = rockTypesPaths[rockType];
+
+    // Configure diffuse texture
+    textures.diffuse.wrapS = THREE.RepeatWrapping;
+    textures.diffuse.wrapT = THREE.RepeatWrapping;
+
+    // Configure displacement texture
+    textures.displacement.wrapS = THREE.RepeatWrapping;
+    textures.displacement.wrapT = THREE.RepeatWrapping;
+
+    // Load normal map
+    const exrLoader = new EXRLoader();
+    console.log(`${basePath}_nor_gl.exr`);
+    exrLoader.load(`${basePath}_nor_gl.exr`, (texture) => {
+        textures.normal = texture;
+        textures.normal.wrapS = THREE.RepeatWrapping;
+        textures.normal.wrapT = THREE.RepeatWrapping;
+    });
+});
+
+var activeRockType = 'cracked_boulder';
+
+function setActiveRockType(newType) {
+    activeRockType = newType;
+}
+
+export { rockTypes, activeRockType, setActiveRockType };
+
 
 export default class Rock {
     constructor(options = {}) {
@@ -7,7 +67,6 @@ export default class Rock {
             radius: options.radius || 0.05,
             segments: options.segments || 12,
             mass: options.mass || 0.1, // kg
-            // REDUCED: Lower drag coefficient for less air resistance
             dragCoefficient: options.dragCoefficient || 0.2,
             elasticity: options.elasticity || 0.6, // Bounce factor
             minSkipVelocity: options.minSkipVelocity || 0.8, // Min velocity needed to skip
@@ -15,6 +74,11 @@ export default class Rock {
             skipsBeforeSink: options.skipsBeforeSink || 5, // Maximum skips before sinking
             skipAngleThreshold: options.skipAngleThreshold || 30, // Angle threshold for skipping converted to radians
             floorDepth: options.floorDepth || -0.5,
+
+            rockType: options.rockType || activeRockType, // Use the current active rock type
+            displacementScale: options.displacementScale || 0.05,
+            textureRepeat: options.textureRepeat || new THREE.Vector2(2, 2),
+            envMap: options.envMap || null // Environment map for reflections
         };
 
         // Physics properties
@@ -39,33 +103,72 @@ export default class Rock {
         // Create a slightly deformed sphere for the rock
         const geometry = new THREE.SphereGeometry(
             this.options.radius,
-            this.options.segments,
-            this.options.segments
+            this.options.segments * 2,
+            this.options.segments * 2
         );
 
-        // Deform vertices slightly for a more rock-like appearance
+        // Deform vertices
         const positions = geometry.attributes.position;
-        for (let i = 0; i < positions.count; i++) {
-            const vertex = new THREE.Vector3();
-            vertex.fromBufferAttribute(positions, i);
+        // for (let i = 0; i < positions.count; i++) {
+        //     const vertex = new THREE.Vector3();
+        //     vertex.fromBufferAttribute(positions, i);
 
-            // Apply random deformation
-            const noise = (Math.random() - 0.5) * 0.3;
-            vertex.multiplyScalar(1 + noise * this.options.radius);
+        //     // Apply random deformation
+        //     const noise = (Math.random() - 0.5) * 0.3;
+        //     vertex.multiplyScalar(1 + noise * this.options.radius);
 
-            // Update the vertex
-            positions.setXYZ(i, vertex.x, vertex.y, vertex.z);
-        }
+        //     // Update the vertex
+        //     positions.setXYZ(i, vertex.x, vertex.y, vertex.z);
+        // }
 
-        // Update normals after deformation
+        // Update normals and compute tangents for normal mapping
         geometry.computeVertexNormals();
+        geometry.computeTangents();
 
-        // Create material (a simple gray material for now)
-        const material = new THREE.MeshStandardMaterial({
-            color: 0x7a7a7a,
-            roughness: 0.8,
-            metalness: 0.1,
-        });
+        // Get the textures for the current rock type
+        console.log("Rock type:", this.options.rockType);
+        console.log("Available rock types:", Object.keys(rockTypes));
+
+        const textures = rockTypes[this.options.rockType];
+        console.log("Textures object:", textures);
+
+        // Create a fallback material in case textures aren't loaded
+        let material;
+
+        if (!textures || !textures.diffuse) {
+            console.error("Textures not found for rock type:", this.options.rockType);
+            // Create a fallback material
+            material = new THREE.MeshStandardMaterial({
+                color: 0x7a7a7a,
+                roughness: 0.8,
+                metalness: 0.1,
+                envMap: this.options.envMap,
+                envMapIntensity: 0.3
+            });
+        } else {
+            // Create material with texture
+            material = new THREE.MeshStandardMaterial({
+                map: textures.diffuse,
+                displacementMap: textures.displacement || null,
+                displacementScale: this.options.displacementScale,
+                normalMap: textures.normal || null, // Might be null initially
+                roughness: 0.8,
+                metalness: 0.2,
+                envMap: this.options.envMap, // Use environment map for reflections
+                envMapIntensity: 0.3, // Lower intensity for subtle reflections
+            });
+
+            // Apply texture repeat
+            if (textures.diffuse && textures.diffuse.repeat) {
+                textures.diffuse.repeat.copy(this.options.textureRepeat);
+            }
+            if (textures.displacement && textures.displacement.repeat) {
+                textures.displacement.repeat.copy(this.options.textureRepeat);
+            }
+            if (textures.normal && textures.normal.repeat) {
+                textures.normal.repeat.copy(this.options.textureRepeat);
+            }
+        }
 
         // Create the mesh
         this.mesh = new THREE.Mesh(geometry, material);
@@ -74,6 +177,19 @@ export default class Rock {
 
         // Initialize position
         this.mesh.position.copy(this.position);
+
+        // Set up a callback to update the normal map when it's loaded
+        if (textures && !textures.normal) {
+            const checkNormalMap = () => {
+                if (textures.normal) {
+                    this.mesh.material.normalMap = textures.normal;
+                    this.mesh.material.needsUpdate = true;
+                } else {
+                    setTimeout(checkNormalMap, 100);
+                }
+            };
+            setTimeout(checkNormalMap, 100);
+        }
     }
 
     setPosition(x, y, z) {
@@ -125,9 +241,9 @@ export default class Rock {
         } else {
             // Rock has sunk - apply sinking physics or check ground collision
             // Check if the rock is at or below ground level
-            if (this.position.y <= this.options.floorDepth) {
+            if (this.position.y <= this.options.floorDepth + 0.3) {
                 // Already hit the ground in a previous frame or just hit it
-                this.position.y = this.options.floorDepth;    // Clamp position to ground level
+                this.position.y = this.options.floorDepth + 0.3;    // Clamp position to ground level
                 this.velocity.set(0, 0, 0);       // Stop ALL movement
                 this.angularVelocity.set(0, 0, 0); // Stop spinning
                 // Optionally deactivate completely after stopping
@@ -160,8 +276,8 @@ export default class Rock {
 
         // Re-check if the new position went below ground level after position update
         if (this.hasSunk) {
-            if (this.position.y < this.options.floorDepth) {
-                this.position.y = this.options.floorDepth;    // Clamp position
+            if (this.position.y < this.options.floorDepth + 0.3) {
+                this.position.y = this.options.floorDepth + 0.3;    // Clamp position
                 this.velocity.set(0, 0, 0);       // Ensure velocity is zeroed if it crossed the boundary
                 this.angularVelocity.set(0, 0, 0);
             }
@@ -261,7 +377,7 @@ export default class Rock {
                 let sinkReason = "";
                 if (impactVelocity <= this.options.minSkipVelocity) {
                     sinkReason = "insufficient velocity";
-                } else if (Math.abs(angleOfIncidence) >= this.options.skipAngleThreshold  * (Math.PI / 180)) {
+                } else if (Math.abs(angleOfIncidence) >= this.options.skipAngleThreshold * (Math.PI / 180)) {
                     sinkReason = "angle too steep";
                 } else {
                     sinkReason = "max skips exceeded";
@@ -298,8 +414,8 @@ export default class Rock {
             this.position.x > halfWidth ||
             this.position.z < -halfHeight ||
             this.position.z > halfHeight ||
-            this.position.y < this.options.floorDepth - 0.1 || // Only deactivate if it's significantly below ground (error margin)
-            Date.now() - this.startTime > 30000 // Maximum simulation time (30 seconds)
+            this.position.y < this.options.floorDepth + 0.1 || // Only deactivate if it's significantly below ground (error margin)
+            Date.now() - this.startTime > 3000 // Maximum simulation time (3 seconds)
         ) {
             // console.log(`Rock out of bounds or timeout. Position: (${this.position.x.toFixed(2)}, ${this.position.y.toFixed(2)}, ${this.position.z.toFixed(2)})`);
             this.isActive = false;
@@ -313,6 +429,7 @@ export default class Rock {
 
     // Returns if the rock has finished its trajectory (either sunk or out of bounds)
     isFinished() {
-        return !this.isActive || this.hasSunk;
+        //return !this.isActive;
+        return false;
     }
 }

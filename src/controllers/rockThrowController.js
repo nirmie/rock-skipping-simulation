@@ -8,16 +8,22 @@ export default class RockThrowController {
         this.camera = options.camera;
         this.water = options.water;
         this.waterPlaneSize = options.waterPlaneSize || { width: 2, height: 2 };
+        this.envMap = options.envMap || null; // Store environment map
+
 
         // Central options for all rocks
         this.rockOptions = {
-            skipAngleThreshold: 30, // Default skip angle threshold
-            minSkipVelocity: 0.5,
-            elasticity: 0.5,
-            skipsBeforeSink: 3,
-            // ADDED: Move throwVelocity to rockOptions for UI control
+            skipAngleThreshold: options.skipAngleThreshold || 30, // Default skip angle threshold
+            minSkipVelocity: options.minSkipVelocity || 0.8,
+            elasticity: options.elasticity || 0.6,
+            skipsBeforeSink: options.skipsBeforeSink || 3,
+            // Move throwVelocity to rockOptions for UI control
             throwVelocity: options.throwVelocity || 12.0,
             floorDepth: options.floorDepth || -0.5,
+            rockType: 'cracked_boulder', // Default rock type
+            displacementScale: 0.05,
+            textureRepeat: new THREE.Vector2(2, 2),
+            envMap: this.envMap, // Pass environment map to rocks
         };
 
         // DOM element for event listeners
@@ -341,11 +347,51 @@ export default class RockThrowController {
         // Update all rocks in pool
         this.rockPool.forEach(rock => {
             Object.assign(rock.options, this.rockOptions);
+            // Apply texture repeat updates to existing rocks
+            if (rock.mesh && rock.mesh.material) {
+                const textures = rockTypes[rock.options.rockType];
+
+                if (textures.diffuse) {
+                    textures.diffuse.repeat.copy(rock.options.textureRepeat);
+                }
+                if (textures.displacement) {
+                    textures.displacement.repeat.copy(rock.options.textureRepeat);
+                }
+                if (textures.normal) {
+                    textures.normal.repeat.copy(rock.options.textureRepeat);
+                }
+
+                // Update displacement scale
+                rock.mesh.material.displacementScale = rock.options.displacementScale;
+
+                // Flag material for update
+                rock.mesh.material.needsUpdate = true;
+            }
         });
 
         // Update all active rocks
         this.activeRocks.forEach(rock => {
             Object.assign(rock.options, this.rockOptions);
+
+            if (rock.mesh && rock.mesh.material) {
+                const textures = rockTypes[rock.options.rockType];
+
+                if (textures.diffuse) {
+                    textures.diffuse.repeat.copy(rock.options.textureRepeat);
+                }
+                if (textures.displacement) {
+                    textures.displacement.repeat.copy(rock.options.textureRepeat);
+                }
+                if (textures.normal) {
+                    textures.normal.repeat.copy(rock.options.textureRepeat);
+                }
+
+                // Update displacement scale
+                rock.mesh.material.displacementScale = rock.options.displacementScale;
+
+                // Flag material for update
+                rock.mesh.material.needsUpdate = true;
+            }
         });
     }
 

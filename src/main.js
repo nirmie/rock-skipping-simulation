@@ -17,7 +17,7 @@ import { Wireframe } from 'three/examples/jsm/Addons.js';
 const clock = new THREE.Clock();
 const waterResolution = 512;
 const waterPlaneSize = { width: 10, height: 25 };
-const floorDepth = -10;
+const floorDepth = -0.5;
 
 // Scene setup: Create the scene, camera, and renderer
 const scene = new THREE.Scene();
@@ -108,8 +108,9 @@ async function initializeScene() {
             waterPlaneSize: waterPlaneSize,
             domElement: renderer.domElement,
             throwVelocity: 10.0,
-            skipAngleThreshold: 45,
+            skipAngleThreshold: 17,
             floorDepth: floorDepth,
+            envMap: loadedEnvMap,
         });
 
         // Setup the UI after the water and ground objects are created
@@ -139,7 +140,7 @@ async function initializeScene() {
             waterPlaneSize: waterPlaneSize,
             domElement: renderer.domElement,
             throwVelocity: 10.0,
-            skipAngleThreshold: 45,
+            skipAngleThreshold: 17,
             floorDepth: floorDepth,
         });
 
