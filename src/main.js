@@ -74,8 +74,8 @@ directionalLight.shadow.camera.bottom = -waterPlaneSize.height;
 scene.add(directionalLight);
 
 // Optional: Add a helper to visualize the shadow camera
-const shadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
-scene.add(shadowHelper);
+// const shadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
+// scene.add(shadowHelper);
 
 const lightDirection = new THREE.Vector3();
 lightDirection.copy(directionalLight.position).normalize();
