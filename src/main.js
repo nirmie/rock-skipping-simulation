@@ -59,7 +59,7 @@ controls.enableDamping = true;
 
 // Set up lighting
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-directionalLight.position.set(-5, 3, -310);
+directionalLight.position.set(-10, 1.8, 0);
 directionalLight.castShadow = true;
 
 directionalLight.shadow.mapSize.width = 1024;
