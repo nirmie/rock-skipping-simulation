@@ -238,29 +238,37 @@ export default class Rock {
                 .multiplyScalar(-0.1 * this.options.dragCoefficient * this.velocity.lengthSq() * fixedDeltaTime);
             this.velocity.add(airDragForce.divideScalar(this.options.mass));
         } else {
-            // Rock has sunk - apply sinking physics or check ground collision
+            // Rock has sunk - apply sinking physics
             // Check if the rock is at or below ground level
             if (this.position.y <= this.options.floorDepth) {
                 // Already hit the ground in a previous frame or just hit it
                 this.position.y = this.options.floorDepth; // Clamp position to ground level
                 this.velocity.set(0, 0, 0); // Stop ALL movement
                 this.angularVelocity.set(0, 0, 0); // Stop spinning
-                // Optionally deactivate completely after stopping
-                // this.isActive = false;
             } else {
-                // Still sinking towards the ground, apply sinking drag
-                const sinkingDragCoefficient = 0.5;
-                const sinkingDragForce = this.velocity.clone().multiplyScalar(-sinkingDragCoefficient * fixedDeltaTime);
-                this.velocity.add(sinkingDragForce);
+                // Still sinking towards the ground, apply water resistance
+                const waterDragCoefficient = 0.8; // Stronger drag in water than air
 
-                // Optional: Add slight upward buoyancy or just let gravity be countered by drag
-                // this.velocity.y += 0.5 * fixedDeltaTime; // Example buoyancy
+                // Apply sinking force (reduced gravity in water)
+                const waterGravity = this.gravity.clone().multiplyScalar(0.3); // Reduced gravity underwater
+                this.velocity.add(waterGravity.multiplyScalar(fixedDeltaTime));
 
-                // Stop sinking if velocity becomes very low (might happen before hitting ground)
-                // if (this.velocity.lengthSq() < 0.00001) {
-                //     this.velocity.set(0, 0, 0);
-                //     this.angularVelocity.set(0, 0, 0);
-                // }
+                // Apply strong water resistance
+                const waterDragForce = this.velocity.clone().multiplyScalar(-waterDragCoefficient * fixedDeltaTime);
+                this.velocity.add(waterDragForce);
+
+                // Add small random sideways movement for underwater effect
+                const randomSway = 0.001;
+                this.velocity.x += (Math.random() - 0.5) * randomSway;
+                this.velocity.z += (Math.random() - 0.5) * randomSway;
+
+                // If velocity gets very small, gradually force the rock downward
+                if (this.velocity.lengthSq() < 0.01) {
+                    this.velocity.y -= 0.02 * fixedDeltaTime; // Ensure rock keeps sinking
+                }
+
+                // Apply strong angular drag underwater
+                this.angularVelocity.multiplyScalar(0.9); // Rapid loss of rotation in water
             }
         }
 
@@ -278,7 +286,7 @@ export default class Rock {
             }
         }
 
-        // Update rotation based on angular velocity (only if velocity/angular velocity is not zero)
+        // Update rotation based on angular velocity (only if angular velocity is not zero)
         if (this.angularVelocity.lengthSq() > 0.001) {
             const rotationDelta = this.angularVelocity.clone().multiplyScalar(fixedDeltaTime);
             this.rotation.x += rotationDelta.x;
@@ -295,7 +303,7 @@ export default class Rock {
             this.checkWaterCollision(prevPosition, waterHeight, water, fixedDeltaTime);
         }
 
-        // Check for boundaries (no changes needed here)
+        // Check for boundaries
         this.checkBoundaries();
     }
 
@@ -360,8 +368,6 @@ export default class Rock {
                     (Math.random() - 0.5) * 10
                 );
 
-                // Intensity based on impact velocity and rock size
-
                 // Create water disturbance at collision point
                 if (water) {
                     // Calculate UV position from world position
@@ -407,8 +413,20 @@ export default class Rock {
                     console.log(`Rock sinking at UV (${uvX.toFixed(2)}, ${uvY.toFixed(2)})`);
                 }
 
-                // Gradually sink the rock
+                // Ensure rock is precisely at collision point when starting to sink
                 this.position.copy(collisionPoint);
+
+                // Apply initial sinking behavior - significantly reduce velocity
+                // but maintain direction for momentum continuity
+                this.velocity.multiplyScalar(0.3);
+
+                // Ensure some downward velocity to start sinking
+                this.velocity.y = -Math.max(0.2, Math.abs(this.velocity.y) * 0.3);
+
+                // Reduce angular velocity for underwater effect
+                this.angularVelocity.multiplyScalar(0.5);
+
+                // Update mesh position
                 this.mesh.position.copy(this.position);
             }
         }
