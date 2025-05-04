@@ -16,7 +16,8 @@ export default class RockThrowController {
             elasticity: 0.5,
             skipsBeforeSink: 3,
             // ADDED: Move throwVelocity to rockOptions for UI control
-            throwVelocity: options.throwVelocity || 12.0
+            throwVelocity: options.throwVelocity || 12.0,
+            floorDepth: options.floorDepth || -0.5,
         };
 
         // DOM element for event listeners
@@ -41,7 +42,7 @@ export default class RockThrowController {
         this.throwPosition = new THREE.Vector3(
             0,
             0.5,                                // Slightly above water
-            -this.waterPlaneSize.height * 0.5  // Bottom of pool
+            -this.waterPlaneSize.height * 0.5  // end of the pool (half of the length of the pool)
         );
 
         // Create visual aids

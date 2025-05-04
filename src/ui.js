@@ -66,9 +66,9 @@ export function setupUI({ waterResolution, water, ground, rockThrowController })
   // Create UI folder for Caustics controls
   const causticsFolder = pane.addFolder({ title: "Caustics", expanded: false });
   if (water.causticsMaterial) {
-    causticsFolder.addBinding(water.causticsMaterial.uniforms.uWaterDepth, "value", {
-      min: 0.1, max: 2.0, step: 0.01, label: "Water Depth"
-    });
+    // causticsFolder.addBinding(water.causticsMaterial.uniforms.uWaterDepth, "value", {
+    //   min: 0.1, max: 2.0, step: 0.01, label: "Water Depth"
+    // });
     causticsFolder.addBinding(water.causticsMaterial.uniforms.uIntensity, "value", {
       min: 0, max: 5, step: 0.1, label: "Light Intensity"
     });

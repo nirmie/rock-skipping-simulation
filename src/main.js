@@ -17,6 +17,7 @@ import { Wireframe } from 'three/examples/jsm/Addons.js';
 const clock = new THREE.Clock();
 const waterResolution = 512;
 const waterPlaneSize = { width: 10, height: 25 };
+const floorDepth = -10;
 
 // Scene setup: Create the scene, camera, and renderer
 const scene = new THREE.Scene();
@@ -40,11 +41,40 @@ const environmentMapPromise = cubeTextureLoader.loadAsync([
     'px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png'
 ]);
 
+// Set up camera position and controls
+camera.position.set(0, 1.5, -(waterPlaneSize.height || 10) / 2 - 2);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, 1);
+controls.enableDamping = true;
+
+// Set up lighting
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+directionalLight.position.set(-5, 3, -310);
+directionalLight.castShadow = true;
+
+directionalLight.shadow.mapSize.width = 1024;
+directionalLight.shadow.mapSize.height = 1024;
+directionalLight.shadow.camera.near = 0.1;
+directionalLight.shadow.camera.far = 20;
+directionalLight.shadow.camera.left = -waterPlaneSize.width;
+directionalLight.shadow.camera.right = waterPlaneSize.width;
+directionalLight.shadow.camera.top = waterPlaneSize.height;
+directionalLight.shadow.camera.bottom = -waterPlaneSize.height;
+
+scene.add(directionalLight);
+
+// Optional: Add a helper to visualize the shadow camera
+const shadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
+scene.add(shadowHelper);
+
+const lightDirection = new THREE.Vector3();
+lightDirection.copy(directionalLight.position).normalize();
+
 // --- Water Object ---
 let water;
 
 // --- Ground Object ---
-const ground = new Ground({ planeSize: waterPlaneSize });
+const ground = new Ground({ planeSize: waterPlaneSize, floorDepth: floorDepth });
 ground.receiveShadow = true;
 scene.add(ground);
 
@@ -64,7 +94,8 @@ async function initializeScene() {
             resolution: waterResolution,
             envMap: loadedEnvMap,
             planeSize: waterPlaneSize,
-            Wireframe: true
+            floorDepth: floorDepth,
+            lightDirection: lightDirection,
         });
         water.castShadow = true;
         scene.add(water);
@@ -78,6 +109,7 @@ async function initializeScene() {
             domElement: renderer.domElement,
             throwVelocity: 10.0,
             skipAngleThreshold: 45,
+            floorDepth: floorDepth,
         });
 
         // Setup the UI after the water and ground objects are created
@@ -93,7 +125,9 @@ async function initializeScene() {
         water = new Water({
             resolution: waterResolution,
             envMap: null,
-            planeSize: waterPlaneSize
+            planeSize: waterPlaneSize,
+            floorDepth: floorDepth,
+            lightDirection: lightDirection,
         });
         scene.add(water);
 
@@ -106,6 +140,7 @@ async function initializeScene() {
             domElement: renderer.domElement,
             throwVelocity: 10.0,
             skipAngleThreshold: 45,
+            floorDepth: floorDepth,
         });
 
         // still setup UI even though some wont be functional
@@ -143,34 +178,10 @@ function showInstructions() {
     document.body.appendChild(instructions);
 }
 
-// Set up camera position and controls
-camera.position.set(0, 1.5, -(waterPlaneSize.height || 10) / 2 - 2);
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 0, 1);
-controls.enableDamping = true;
 
-// Set up lighting
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-directionalLight.position.set(-5, 3, -3);
-directionalLight.castShadow = true;
-
-directionalLight.shadow.mapSize.width = 1024;
-directionalLight.shadow.mapSize.height = 1024;
-directionalLight.shadow.camera.near = 0.1;
-directionalLight.shadow.camera.far = 20;
-directionalLight.shadow.camera.left = -waterPlaneSize.width;
-directionalLight.shadow.camera.right = waterPlaneSize.width;
-directionalLight.shadow.camera.top = waterPlaneSize.height;
-directionalLight.shadow.camera.bottom = -waterPlaneSize.height;
-
-scene.add(directionalLight);
-
-// Optional: Add a helper to visualize the shadow camera
-const shadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
-scene.add(shadowHelper);
 
 let lastTime = 0;
-const lightDirection = new THREE.Vector3();
+
 
 // Animation loop
 function animate() {

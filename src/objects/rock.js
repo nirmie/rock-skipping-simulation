@@ -14,6 +14,7 @@ export default class Rock {
             waterPlaneSize: options.waterPlaneSize || { width: 2, height: 2 },
             skipsBeforeSink: options.skipsBeforeSink || 5, // Maximum skips before sinking
             skipAngleThreshold: options.skipAngleThreshold || 30, // Angle threshold for skipping converted to radians
+            floorDepth: options.floorDepth || -0.5,
         };
 
         // Physics properties
@@ -123,14 +124,10 @@ export default class Rock {
 
         } else {
             // Rock has sunk - apply sinking physics or check ground collision
-
-            // Define the absolute ground level
-            const groundLevel = -0.5;
-
             // Check if the rock is at or below ground level
-            if (this.position.y <= groundLevel) {
+            if (this.position.y <= this.options.floorDepth) {
                 // Already hit the ground in a previous frame or just hit it
-                this.position.y = groundLevel;    // Clamp position to ground level
+                this.position.y = this.options.floorDepth;    // Clamp position to ground level
                 this.velocity.set(0, 0, 0);       // Stop ALL movement
                 this.angularVelocity.set(0, 0, 0); // Stop spinning
                 // Optionally deactivate completely after stopping
@@ -163,9 +160,8 @@ export default class Rock {
 
         // Re-check if the new position went below ground level after position update
         if (this.hasSunk) {
-            const groundLevel = -0.5;
-            if (this.position.y < groundLevel) {
-                this.position.y = groundLevel;    // Clamp position
+            if (this.position.y < this.options.floorDepth) {
+                this.position.y = this.options.floorDepth;    // Clamp position
                 this.velocity.set(0, 0, 0);       // Ensure velocity is zeroed if it crossed the boundary
                 this.angularVelocity.set(0, 0, 0);
             }
@@ -297,14 +293,12 @@ export default class Rock {
         // Check if rock has gone out of bounds
         const halfWidth = this.options.waterPlaneSize.width / 2;
         const halfHeight = this.options.waterPlaneSize.height / 2;
-        const groundLevel = -0.5;
-
         if (
             this.position.x < -halfWidth ||
             this.position.x > halfWidth ||
             this.position.z < -halfHeight ||
             this.position.z > halfHeight ||
-            this.position.y < groundLevel - 0.1 || // Only deactivate if it's significantly below ground (error margin)
+            this.position.y < this.options.floorDepth - 0.1 || // Only deactivate if it's significantly below ground (error margin)
             Date.now() - this.startTime > 30000 // Maximum simulation time (30 seconds)
         ) {
             // console.log(`Rock out of bounds or timeout. Position: (${this.position.x.toFixed(2)}, ${this.position.y.toFixed(2)}, ${this.position.z.toFixed(2)})`);
