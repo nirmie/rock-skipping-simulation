@@ -1,10 +1,10 @@
-import * as THREE from 'three';
-import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
+import * as THREE from "three";
+import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js";
 
 const rockTypesPaths = {
-    cracked_boulder: 'rock_textures/cracked_boulder/cracked_boulder',
-    coast: 'rock_textures/coast/coast',
-    slate: 'rock_textures/slate/slate',
+    cracked_boulder: "rock_textures/cracked_boulder/cracked_boulder",
+    coast: "rock_textures/coast/coast",
+    slate: "rock_textures/slate/slate",
 };
 
 const rockTypes = {
@@ -12,24 +12,24 @@ const rockTypes = {
         // name: 'Cracked Boulder',
         diffuse: new THREE.TextureLoader().load(`${rockTypesPaths.cracked_boulder}_diff.jpg`),
         displacement: new THREE.TextureLoader().load(`${rockTypesPaths.cracked_boulder}_disp.png`),
-        normal: null // Will be loaded async
+        normal: null, // Will be loaded async
     },
     coast: {
         // name: 'Coast',
         diffuse: new THREE.TextureLoader().load(`${rockTypesPaths.coast}_diff.jpg`),
         displacement: new THREE.TextureLoader().load(`${rockTypesPaths.coast}_disp.png`),
-        normal: null
+        normal: null,
     },
     slate: {
         // name: 'Coast',
         diffuse: new THREE.TextureLoader().load(`${rockTypesPaths.slate}_diff.jpg`),
         displacement: new THREE.TextureLoader().load(`${rockTypesPaths.slate}_disp.png`),
-        normal: null
+        normal: null,
     },
 };
 
 // Configure all textures
-Object.keys(rockTypes).forEach(rockType => {
+Object.keys(rockTypes).forEach((rockType) => {
     const textures = rockTypes[rockType];
     const basePath = rockTypesPaths[rockType];
 
@@ -51,14 +51,13 @@ Object.keys(rockTypes).forEach(rockType => {
     });
 });
 
-var activeRockType = 'cracked_boulder';
+var activeRockType = "cracked_boulder";
 
 function setActiveRockType(newType) {
     activeRockType = newType;
 }
 
 export { rockTypes, activeRockType, setActiveRockType };
-
 
 export default class Rock {
     constructor(options = {}) {
@@ -78,7 +77,7 @@ export default class Rock {
             rockType: options.rockType || activeRockType, // Use the current active rock type
             displacementScale: options.displacementScale || 0.05,
             textureRepeat: options.textureRepeat || new THREE.Vector2(2, 2),
-            envMap: options.envMap || null // Environment map for reflections
+            envMap: options.envMap || null, // Environment map for reflections
         };
 
         // Physics properties
@@ -143,7 +142,7 @@ export default class Rock {
                 roughness: 0.8,
                 metalness: 0.1,
                 envMap: this.options.envMap,
-                envMapIntensity: 0.3
+                envMapIntensity: 0.3,
             });
         } else {
             // Create material with texture
@@ -233,38 +232,35 @@ export default class Rock {
         if (!this.hasSunk) {
             // Apply gravity and air drag if not sunk
             this.velocity.add(this.gravity.clone().multiplyScalar(fixedDeltaTime));
-            const airDragForce = this.velocity.clone().normalize().multiplyScalar(
-                -0.1 * this.options.dragCoefficient * this.velocity.lengthSq() * fixedDeltaTime
-            );
+            const airDragForce = this.velocity
+                .clone()
+                .normalize()
+                .multiplyScalar(-0.1 * this.options.dragCoefficient * this.velocity.lengthSq() * fixedDeltaTime);
             this.velocity.add(airDragForce.divideScalar(this.options.mass));
-
         } else {
             // Rock has sunk - apply sinking physics or check ground collision
             // Check if the rock is at or below ground level
-            if (this.position.y <= this.options.floorDepth + 0.3) {
+            if (this.position.y <= this.options.floorDepth) {
                 // Already hit the ground in a previous frame or just hit it
-                this.position.y = this.options.floorDepth + 0.3;    // Clamp position to ground level
-                this.velocity.set(0, 0, 0);       // Stop ALL movement
+                this.position.y = this.options.floorDepth; // Clamp position to ground level
+                this.velocity.set(0, 0, 0); // Stop ALL movement
                 this.angularVelocity.set(0, 0, 0); // Stop spinning
                 // Optionally deactivate completely after stopping
                 // this.isActive = false;
-
             } else {
                 // Still sinking towards the ground, apply sinking drag
-                const sinkingDragCoefficient = 2.0;
-                const sinkingDragForce = this.velocity.clone().multiplyScalar(
-                    -sinkingDragCoefficient * fixedDeltaTime
-                );
+                const sinkingDragCoefficient = 0.5;
+                const sinkingDragForce = this.velocity.clone().multiplyScalar(-sinkingDragCoefficient * fixedDeltaTime);
                 this.velocity.add(sinkingDragForce);
 
                 // Optional: Add slight upward buoyancy or just let gravity be countered by drag
                 // this.velocity.y += 0.5 * fixedDeltaTime; // Example buoyancy
 
                 // Stop sinking if velocity becomes very low (might happen before hitting ground)
-                if (this.velocity.lengthSq() < 0.001) {
-                    this.velocity.set(0, 0, 0);
-                    this.angularVelocity.set(0, 0, 0);
-                }
+                // if (this.velocity.lengthSq() < 0.00001) {
+                //     this.velocity.set(0, 0, 0);
+                //     this.angularVelocity.set(0, 0, 0);
+                // }
             }
         }
 
@@ -273,16 +269,14 @@ export default class Rock {
             this.position.add(this.velocity.clone().multiplyScalar(fixedDeltaTime));
         }
 
-
         // Re-check if the new position went below ground level after position update
         if (this.hasSunk) {
-            if (this.position.y < this.options.floorDepth + 0.3) {
-                this.position.y = this.options.floorDepth + 0.3;    // Clamp position
-                this.velocity.set(0, 0, 0);       // Ensure velocity is zeroed if it crossed the boundary
+            if (this.position.y < this.options.floorDepth) {
+                this.position.y = this.options.floorDepth; // Clamp position
+                this.velocity.set(0, 0, 0); // Ensure velocity is zeroed if it crossed the boundary
                 this.angularVelocity.set(0, 0, 0);
             }
         }
-
 
         // Update rotation based on angular velocity (only if velocity/angular velocity is not zero)
         if (this.angularVelocity.lengthSq() > 0.001) {
@@ -324,21 +318,30 @@ export default class Rock {
             // since angle from acos is just normal to velocity, we subtract it from PI/2
             const angleOfIncidence = Math.abs(Math.PI / 2 - Math.acos(velocityDirection.dot(waterNormal)));
 
-
             // Debug log the collision with velocity details
             // console.log(`Rock collision at (${collisionPoint.x.toFixed(2)}, ${collisionPoint.y.toFixed(2)}, ${collisionPoint.z.toFixed(2)})`);
             // console.log(`Impact velocity: ${impactVelocity.toFixed(2)} - Components: (${this.velocity.x.toFixed(2)}, ${this.velocity.y.toFixed(2)}, ${this.velocity.z.toFixed(2)})`);
-            const disturbanceIntensity = 0.01 + Math.pow(impactVelocity, 2.5) * this.options.radius * this.options.radius;
+            const disturbanceIntensity =
+                0.01 + Math.pow(impactVelocity, 2.5) * this.options.radius * this.options.radius;
 
-            console.log('Angle of incidence:', (180 / Math.PI) * angleOfIncidence.toFixed(2), ' Max angle:', this.options.skipAngleThreshold);
+            console.log(
+                "Angle of incidence:",
+                (180 / Math.PI) * angleOfIncidence.toFixed(2),
+                " Max angle:",
+                this.options.skipAngleThreshold
+            );
             // Only skip if velocity is above minimum threshold and we haven't exceeded max skips
-            if (angleOfIncidence < (Math.PI / 180) * this.options.skipAngleThreshold && impactVelocity > this.options.minSkipVelocity && this.skipCount < this.options.skipsBeforeSink) {
+            if (
+                angleOfIncidence < (Math.PI / 180) * this.options.skipAngleThreshold &&
+                impactVelocity > this.options.minSkipVelocity &&
+                this.skipCount < this.options.skipsBeforeSink
+            ) {
                 // Increment skip counter
                 this.skipCount++;
                 // console.log(`Skip #${this.skipCount}`);
 
                 // Calculate bounce effect - we want the rock to lose some energy but maintain forward momentum
-                const bounceCoefficient = this.options.elasticity * (1 - (this.skipCount / this.options.skipsBeforeSink));
+                const bounceCoefficient = this.options.elasticity * (1 - this.skipCount / this.options.skipsBeforeSink);
 
                 // Reflect velocity vector but maintain some forward momentum
                 this.velocity.y = -this.velocity.y * bounceCoefficient;
@@ -359,19 +362,23 @@ export default class Rock {
 
                 // Intensity based on impact velocity and rock size
 
-
                 // Create water disturbance at collision point
                 if (water) {
                     // Calculate UV position from world position
-                    const uvX = (collisionPoint.x / this.options.waterPlaneSize.width) + 0.5;
+                    const uvX = collisionPoint.x / this.options.waterPlaneSize.width + 0.5;
                     // Fixed negative Z for correct UV mapping
-                    const uvY = (-collisionPoint.z / this.options.waterPlaneSize.height) + 0.5;
-
-
+                    const uvY = -collisionPoint.z / this.options.waterPlaneSize.height + 0.5;
 
                     // Add disturbance to water
-                    water.addDisturbance(new THREE.Vector2(uvX, uvY), water.simulationMaterial.uniforms.uDisturbanceAmount.value * disturbanceIntensity);
-                    console.log(`Creating ripple at UV (${uvX.toFixed(2)}, ${uvY.toFixed(2)}) with intensity ${disturbanceIntensity.toFixed(3)}`);
+                    water.addDisturbance(
+                        new THREE.Vector2(uvX, uvY),
+                        water.simulationMaterial.uniforms.uDisturbanceAmount.value * disturbanceIntensity
+                    );
+                    console.log(
+                        `Creating ripple at UV (${uvX.toFixed(2)}, ${uvY.toFixed(
+                            2
+                        )}) with intensity ${disturbanceIntensity.toFixed(3)}`
+                    );
                 }
             } else {
                 let sinkReason = "";
@@ -388,17 +395,19 @@ export default class Rock {
 
                 // Create final splash disturbance
                 if (water) {
-                    const uvX = (collisionPoint.x / this.options.waterPlaneSize.width) + 0.5;
+                    const uvX = collisionPoint.x / this.options.waterPlaneSize.width + 0.5;
                     // Fixed negative Z for correct UV mapping
-                    const uvY = (-collisionPoint.z / this.options.waterPlaneSize.height) + 0.5;
+                    const uvY = -collisionPoint.z / this.options.waterPlaneSize.height + 0.5;
 
-                    // Slightly bigger disturbance for sinking
-                    water.addDisturbance(new THREE.Vector2(uvX, uvY), water.simulationMaterial.uniforms.uDisturbanceAmount.value * disturbanceIntensity);
+                    // one last disturbance
+                    water.addDisturbance(
+                        new THREE.Vector2(uvX, uvY),
+                        water.simulationMaterial.uniforms.uDisturbanceAmount.value * disturbanceIntensity
+                    );
                     console.log(`Rock sinking at UV (${uvX.toFixed(2)}, ${uvY.toFixed(2)})`);
                 }
 
                 // Gradually sink the rock
-                // this.velocity.set(this.velocity * 0.5); // Slow sinking velocity
                 this.position.copy(collisionPoint);
                 this.mesh.position.copy(this.position);
             }
