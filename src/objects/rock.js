@@ -71,7 +71,7 @@ export default class Rock {
             minSkipVelocity: options.minSkipVelocity || 0.4, // Min velocity needed to skip
             waterPlaneSize: options.waterPlaneSize || { width: 2, height: 2 },
             skipsBeforeSink: options.skipsBeforeSink || 6, // Maximum skips before sinking
-            skipAngleThreshold: options.skipAngleThreshold || 30, // Angle threshold for skipping converted to radians
+            skipAngleThreshold: options.skipAngleThreshold || 17, // Angle threshold for skipping converted to radians
             floorDepth: options.floorDepth || -0.5,
 
             rockType: options.rockType || activeRockType, // Use the current active rock type
@@ -337,7 +337,7 @@ export default class Rock {
             // console.log(`Rock collision at (${collisionPoint.x.toFixed(2)}, ${collisionPoint.y.toFixed(2)}, ${collisionPoint.z.toFixed(2)})`);
             // console.log(`Impact velocity: ${impactVelocity.toFixed(2)} - Components: (${this.velocity.x.toFixed(2)}, ${this.velocity.y.toFixed(2)}, ${this.velocity.z.toFixed(2)})`);
             const disturbanceIntensity =
-            0.01 + Math.pow(impactVelocity, 2.5) * this.options.radius * this.options.radius *
+            0.001 + Math.pow(impactVelocity, 2.5) * this.options.radius * this.options.radius *
             (this.options.mass / 0.1);
 
             console.log(

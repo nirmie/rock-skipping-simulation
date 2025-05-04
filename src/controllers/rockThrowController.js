@@ -12,7 +12,7 @@ export default class RockThrowController {
 
         // Central options for all rocks
         this.rockOptions = {
-            skipAngleThreshold: options.skipAngleThreshold || 30, // Default skip angle threshold
+            skipAngleThreshold: options.skipAngleThreshold || 17, // Default skip angle threshold
             minSkipVelocity: options.minSkipVelocity || 0.4,
             elasticity: options.elasticity || 0.9,
             skipsBeforeSink: options.skipsBeforeSink || 6,

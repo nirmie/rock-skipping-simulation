@@ -340,7 +340,7 @@ export function setupUI({
     // Add skip angle threshold control
     rockFolder
       .addBinding(rockThrowController.rockOptions, "skipAngleThreshold", {
-        min: 0.0,
+        min: 1.0,
         max: 90.0,
         step: 1.0,
         label: "Skip Angle (°)",

@@ -40,35 +40,25 @@ void main() {
     // Assuming light enters from air (n1=1.0) to water (n2=1.33)
     float eta = 1.0 / 1.33;
     vec3 refractedDir = refract(normalize(uLightDirection), normal, eta);
-
-    // Project refracted ray onto the virtual "floor"
-    // Calculate how far the ray travels in Z to reach the depth
-    // This assumes the water surface is near z=0 and floor is at z=-uWaterDepth
-    // We need the ray intersection point with the plane z = -uWaterDepth
-    // Ray: P = surfacePoint + t * refractedDir
-    // surfacePoint.z is approx 0 (or could use actual height, but small difference)
-    // We want P.z = -uWaterDepth
-    // 0 + t * refractedDir.z = -uWaterDepth
-    // t = -uWaterDepth / refractedDir.z
+/*
+    Project refracted ray onto the virtual "floor"
+    Calculate how far the ray travels in Z to reach the depth
+    This assumes the water surface is near z=0 and floor is at z=-uWaterDepth
+    We need the ray intersection point with the plane z = -uWaterDepth
+    Ray: P = surfacePoint + t * refractedDir
+    surfacePoint.z is approx 0 (or could use actual height, but small difference)
+    We want P.z = -uWaterDepth
+    0 + t * refractedDir.z = -uWaterDepth
+    t = -uWaterDepth / refractedDir.z
+*/
     float t = -uWaterDepth / refractedDir.z;
 
     // Calculate intersection point in XY plane relative to the surface point (vUv)
-    // IntersectionPoint.xy = surfacePoint.xy + t * refractedDir.xy
-    // Since we are rendering to a texture, we map this intersection point back to UV space
-    // The offset depends on the scale mapping UVs to world space. Assuming UV [0,1] maps to world [-planeSize/2, planeSize/2]
-    // For simplicity, let's assume the offset in UV space is proportional to the XY component of the refracted dir scaled by t
     // This is an approximation, a more accurate projection depends on the exact world space setup.
     vec2 uvOffset = t * refractedDir.xy * 0.1; // The 0.1 is an arbitrary scale factor, adjust as needed!
 
     // The UV coordinate where this light ray hits the floor
     vec2 hitUv = vUv + uvOffset;
-
-    // We are currently calculating the *outgoing* light from vUv.
-    // To draw the caustics map, we need to know, for *this* fragment (vUv),
-    // which surface points refracted light *here*. This is the reverse projection.
-    // This is complex. A common approximation is to "splat" the light energy.
-    // Each point on the surface (vUv) projects light to 'hitUv'.
-    // We can't easily write *to* hitUv in a fragment shader.
 
     // --- Alternative: Screen-Space Approximation ---
     // Calculate how much the normal bends the light towards/away from the center of projection.
@@ -96,9 +86,4 @@ void main() {
 
     // Output the caustics intensity (can use RGBA if storing more info)
     gl_FragColor = vec4(vec3(caustics), 1.0);
-
-    // --- Note on more accurate methods ---
-    // True caustics often involve multi-pass rendering or geometry shaders to "splat"
-    // light energy onto the receiving surface based on the calculated hitUv.
-    // The screen-space method above is a common performance trade-off.
 }
