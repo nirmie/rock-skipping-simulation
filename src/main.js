@@ -17,6 +17,19 @@ const waterResolution = 384;
 const waterPlaneSize = { width: 4, height: 20 };
 const floorDepth = -2;
 
+// Track which keys are currently pressed
+const keyState = {
+  w: false,
+  a: false,
+  s: false,
+  d: false,
+  q: false,
+  e: false
+};
+
+// Camera movement speed
+const cameraSpeed = 3.0; // units per second
+
 // Scene setup: Create the scene, camera, and renderer
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.001, 100);
@@ -56,6 +69,29 @@ camera.position.set(0, 1.5, -(waterPlaneSize.height || 10) / 2 - 2);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 0, 1);
 controls.enableDamping = true;
+
+// Set up keyboard controls for camera movement
+window.addEventListener('keydown', (event) => {
+  switch(event.key.toLowerCase()) {
+    case 'w': keyState.w = true; break;
+    case 'a': keyState.a = true; break;
+    case 's': keyState.s = true; break;
+    case 'd': keyState.d = true; break;
+    case 'q': keyState.q = true; break;
+    case 'e': keyState.e = true; break;
+  }
+});
+
+window.addEventListener('keyup', (event) => {
+  switch(event.key.toLowerCase()) {
+    case 'w': keyState.w = false; break;
+    case 'a': keyState.a = false; break;
+    case 's': keyState.s = false; break;
+    case 'd': keyState.d = false; break;
+    case 'q': keyState.q = false; break;
+    case 'e': keyState.e = false; break;
+  }
+});
 
 // Set up lighting
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
@@ -180,6 +216,8 @@ function showInstructions() {
         <ul style="margin: 0; padding-left: 20px;">
             <li>Move your mouse to aim at the water</li>
             <li>Press SPACEBAR to throw a rock</li>
+            <li>Use WASD keys to move camera on the XZ plane</li>
+            <li>Use Q/E keys to move camera up/down</li>
             <li>Left Click to rotate camera</li>
             <li>Scroll to zoom in/out</li>
             <li>Right Click to pan around</li>
@@ -189,10 +227,7 @@ function showInstructions() {
     document.body.appendChild(instructions);
 }
 
-
-
 let lastTime = 0;
-
 
 // Animation loop
 function animate() {
@@ -201,6 +236,32 @@ function animate() {
     const elapsedTime = clock.getElapsedTime();
     const deltaTime = elapsedTime - lastTime;
     lastTime = elapsedTime;
+
+    // Handle keyboard camera movement
+    const moveDirection = new THREE.Vector3(0, 0, 0);
+
+    // XZ-plane movement (world coordinates)
+    if (keyState.w) moveDirection.z += 1; // Forward in world space
+    if (keyState.s) moveDirection.z -= 1; // Backward in world space
+    if (keyState.a) moveDirection.x += 1; // Left in world space
+    if (keyState.d) moveDirection.x -= 1; // Right in world space
+
+    // Vertical movement
+    if (keyState.q) moveDirection.y -= 1; // Down
+    if (keyState.e) moveDirection.y += 1; // Up
+
+    // Apply movement if any keys are pressed
+    if (moveDirection.length() > 0) {
+        moveDirection.normalize();
+        const moveDist = cameraSpeed * deltaTime;
+        moveDirection.multiplyScalar(moveDist);
+
+        // Move the camera
+        camera.position.add(moveDirection);
+
+        // Move the orbit controls target to match camera movement
+        controls.target.add(moveDirection);
+    }
 
     controls.update();
 

@@ -50,14 +50,6 @@ void main() {
     newHeight *= (1.0 - uViscosity * uDelta);
     newVelocity *= (1.0 - uViscosity * uDelta);
 
-
-    // --- Boundary Conditions (Simple Reflection) ---
-    // If a neighbor read was outside the texture (implicitly clamped to edge),
-    // it simulates a fixed boundary. For reflection, you'd need more complex logic
-    // or ensure the simulation area is slightly smaller than the texture.
-    // This basic implementation implicitly handles fixed edges due to texture clamping.
-
-
     // --- Apply Disturbance (Click/Collision) ---
     if (uApplyDisturbance) {
         // Calculate distance from disturbance center (in UV space)
@@ -68,7 +60,6 @@ void main() {
         // Add disturbance directly to height (can also affect velocity)
         newHeight += strength;
     }
-
 
     // Output new state (height in .r, velocity in .g)
     gl_FragColor = vec4(newHeight, newVelocity, 0.0, 1.0);
