@@ -40,6 +40,7 @@ void main() {
         (hD - hU) / (2.0 * texelSize)  // dH/dV (maps roughly to dH/dZ)
     );
 
+
     // Transform normal to world space
     vNormal = normalize(normalMatrix * normalize(normal));
 

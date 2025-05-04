@@ -24,14 +24,17 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden; /* Prevent scrolling */
+  margin: 0; /* Explicitly set margin to zero */
+  padding: 0;
 }
 
 body {
-  margin: 0;
-  padding: 0;
   display: block; /* Changed from flex to block */
   min-width: 100vw;
   min-height: 100vh;
+  position: absolute; /* Add this line */
+  top: 0; /* Add this line */
+  left: 0; /* Add this line */
 }
 
 /* Make canvas fill the screen */
