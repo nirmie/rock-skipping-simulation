@@ -326,6 +326,17 @@ export function setupUI({
         rockThrowController.updateTrajectoryLine();
       });
 
+      rockFolder
+      .addBinding(rockThrowController.rockOptions, "mass", {
+        min: 0.05,
+        max: 0.5,
+        step: 0.01,
+        label: "Rock Weight (kg)",
+      })
+      .on("change", () => {
+        rockThrowController.updateAllRocksOptions();
+      });
+
     // Add skip angle threshold control
     rockFolder
       .addBinding(rockThrowController.rockOptions, "skipAngleThreshold", {

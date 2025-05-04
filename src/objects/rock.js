@@ -171,6 +171,7 @@ export default class Rock {
 
         // Create the mesh
         this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh.scale.set(1, 0.7, 1); // make it more disc shaped
         this.mesh.castShadow = true;
         this.mesh.receiveShadow = true;
 
@@ -201,6 +202,12 @@ export default class Rock {
         // Store the initial velocity for logging
         this.initialVelocity.copy(this.velocity);
         // console.log(`Rock initial velocity: (${vx.toFixed(2)}, ${vy.toFixed(2)}, ${vz.toFixed(2)}) - Magnitude: ${this.velocity.length().toFixed(2)}`);
+
+        this.angularVelocity.set(
+            vx * 0.01, // Spin around x-axis (perpendicular to throw direction)
+            vy * 0.6,        // Little to no spin around vertical axis
+            vz * 0.01  // Spin around z-axis
+        );
 
         this.isActive = true;
         this.hasSunk = false;
@@ -330,7 +337,8 @@ export default class Rock {
             // console.log(`Rock collision at (${collisionPoint.x.toFixed(2)}, ${collisionPoint.y.toFixed(2)}, ${collisionPoint.z.toFixed(2)})`);
             // console.log(`Impact velocity: ${impactVelocity.toFixed(2)} - Components: (${this.velocity.x.toFixed(2)}, ${this.velocity.y.toFixed(2)}, ${this.velocity.z.toFixed(2)})`);
             const disturbanceIntensity =
-                0.01 + Math.pow(impactVelocity, 2.5) * this.options.radius * this.options.radius;
+            0.01 + Math.pow(impactVelocity, 2.5) * this.options.radius * this.options.radius *
+            (this.options.mass / 0.1);
 
             console.log(
                 "Angle of incidence:",
@@ -341,7 +349,7 @@ export default class Rock {
             // Only skip if velocity is above minimum threshold and we haven't exceeded max skips
             if (
                 angleOfIncidence < (Math.PI / 180) * this.options.skipAngleThreshold &&
-                impactVelocity > this.options.minSkipVelocity &&
+                impactVelocity > this.options.minSkipVelocity * Math.sqrt(this.options.mass / 0.1) && // Heavier rocks need more velocity
                 this.skipCount < this.options.skipsBeforeSink
             ) {
                 // Increment skip counter
