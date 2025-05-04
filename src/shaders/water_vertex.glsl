@@ -1,12 +1,6 @@
 precision highp float;
 
 uniform float uTime;
-// Remove analytical wave/ripple uniforms if fully replaced
-// uniform float uWavesAmplitude;
-// uniform float uWavesFrequency;
-// ... etc ...
-// uniform float uLastClickTime;
-// ... etc ...
 
 // --- Add Height Map Uniform ---
 uniform sampler2D uHeightMap;
@@ -15,12 +9,6 @@ uniform float uHeightScale; // To control the visual height exaggeration
 varying vec3 vWorldPosition;
 varying vec3 vNormal;
 varying vec2 vUv; // Pass UV to fragment shader if needed for texturing
-
-// Simplex noise function (snoise) can be removed if not used elsewhere
-
-// Remove analytical elevation functions
-// float calculateNoiseElevation(vec2 pos) { ... }
-// float calculateRippleElevation(vec2 currentPos) { ... }
 
 void main() {
     vUv = uv; // Store UV coordinates

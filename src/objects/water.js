@@ -16,6 +16,7 @@ export default class Water extends THREE.Mesh {
         this.waterPlaneSize = options.planeSize || { width: 2, height: 2 }; // Default or passed size
         const aspectRatio = this.waterPlaneSize.width / this.waterPlaneSize.height; // Calculate aspect ratio
 
+        this.lightDirection = options.lightDirection;
         // --- Simulation Setup ---
         this.simulationResolution = this.waterResolution;
 
@@ -41,8 +42,9 @@ export default class Water extends THREE.Mesh {
                 uAspect: { value: aspectRatio },
                 uApplyDisturbance: { value: false },
                 uDisturbancePos: { value: new THREE.Vector2() },
-                uDisturbanceAmount: { value: 0.2 },
-                uDisturbanceRadius: { value: 0.01 },
+                uDisturbanceAmount: { value: 1 },
+                uDisturbanceIntensity: { value: 1 },
+                uDisturbanceRadius: { value: 0.004 },
             }
         });
 
@@ -75,8 +77,8 @@ export default class Water extends THREE.Mesh {
                 uHeightMap: { value: null }, // Will be set in renderCaustics
                 uResolution: { value: new THREE.Vector2(this.simulationResolution, this.simulationResolution) }, // Resolution of heightmap
                 uCausticsResolution: { value: new THREE.Vector2(this.causticsResolution, this.causticsResolution) },
-                uLightDirection: { value: new THREE.Vector3(0.5, -1.0, 0.5).normalize() }, // Example light direction
-                uWaterDepth: { value: 0.5 }, // Virtual depth for refraction calculation
+                uLightDirection: { value: options.lightDirection }, // Example light direction
+                uWaterDepth: { value: options.floorDepth }, // Virtual depth for refraction calculation
                 uIntensity: { value: 1.5 }, // Caustics brightness
             },
             transparent: true,
@@ -163,7 +165,8 @@ export default class Water extends THREE.Mesh {
             const disturbance = this.disturbanceQueue.shift();
             this.simulationMaterial.uniforms.uApplyDisturbance.value = true;
             this.simulationMaterial.uniforms.uDisturbancePos.value.copy(disturbance.position);
-            this.simulationMaterial.uniforms.uDisturbanceAmount.value = disturbance.amount;
+            // Use the disturbance intensity from the rock without overriding the global amount
+            this.simulationMaterial.uniforms.uDisturbanceIntensity.value = disturbance.amount;
         } else {
             this.simulationMaterial.uniforms.uApplyDisturbance.value = false;
         }
@@ -203,7 +206,7 @@ export default class Water extends THREE.Mesh {
         // Use the *latest* height map from the simulation (which is now in RT2 after the swap)
         this.causticsMaterial.uniforms.uHeightMap.value = this.renderTarget2.texture;
         // Update light direction if it's dynamic
-        // this.causticsMaterial.uniforms.uLightDirection.value = ...;
+        this.causticsMaterial.uniforms.uLightDirection.value = this.lightDirection;
 
         renderer.clear(); // Important: Clear the caustics target
         renderer.render(this.causticsScene, this.causticsCamera);

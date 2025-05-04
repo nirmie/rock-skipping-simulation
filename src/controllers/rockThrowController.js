@@ -8,9 +8,23 @@ export default class RockThrowController {
         this.camera = options.camera;
         this.water = options.water;
         this.waterPlaneSize = options.waterPlaneSize || { width: 2, height: 2 };
+        this.envMap = options.envMap || null; // Store environment map
 
-        // INCREASED: Higher base velocity for farther throws
-        this.throwVelocity = options.throwVelocity || 12.0;
+
+        // Central options for all rocks
+        this.rockOptions = {
+            skipAngleThreshold: options.skipAngleThreshold || 30, // Default skip angle threshold
+            minSkipVelocity: options.minSkipVelocity || 0.4,
+            elasticity: options.elasticity || 0.9,
+            skipsBeforeSink: options.skipsBeforeSink || 6,
+            // Move throwVelocity to rockOptions for UI control
+            throwVelocity: options.throwVelocity || 12.0,
+            floorDepth: options.floorDepth || -0.5,
+            rockType: 'cracked_boulder', // Default rock type
+            displacementScale: 0.05,
+            textureRepeat: new THREE.Vector2(2, 2),
+            envMap: this.envMap, // Pass environment map to rocks
+        };
 
         // DOM element for event listeners
         this.domElement = options.domElement || document.body;
@@ -34,7 +48,7 @@ export default class RockThrowController {
         this.throwPosition = new THREE.Vector3(
             0,
             0.5,                                // Slightly above water
-            -this.waterPlaneSize.height * 0.5  // Bottom of pool
+            -this.waterPlaneSize.height * 0.5  // end of the pool (half of the length of the pool)
         );
 
         // Create visual aids
@@ -55,7 +69,8 @@ export default class RockThrowController {
     initRockPool() {
         for (let i = 0; i < this.rockPoolSize; i++) {
             const rock = new Rock({
-                waterPlaneSize: this.waterPlaneSize
+                waterPlaneSize: this.waterPlaneSize,
+                ...this.rockOptions // Spread the central options
             });
             this.rockPool.push(rock);
         }
@@ -99,12 +114,15 @@ export default class RockThrowController {
             return this.rockPool.pop();
         } else {
             return new Rock({
-                waterPlaneSize: this.waterPlaneSize
+                waterPlaneSize: this.waterPlaneSize,
+                ...this.rockOptions // Spread the central options
             });
         }
     }
 
     returnRockToPool(rock) {
+        // Update rock options from the central options
+        Object.assign(rock.options, this.rockOptions);
         // Return a rock to the pool for reuse
         rock.reset();
         this.rockPool.push(rock);
@@ -179,7 +197,7 @@ export default class RockThrowController {
 
                 // GREATLY IMPROVED: Use linear scaling based on distance
                 // This ensures velocity correctly increases with distance
-                // Calculate velocity 
+                // Calculate velocity
                 const velocityVector = this.calculateVelocityForTarget(throwDirection, distance);
 
                 // Get predicted trajectory points
@@ -208,8 +226,8 @@ export default class RockThrowController {
     calculateVelocityForTarget(direction, distance) {
         // OPTIMIZED: Better velocity scaling formula
         // Linear scaling based on distance with minimum and maximum caps
-        const minVelocity = this.throwVelocity; // Base velocity for close targets
-        const maxVelocity = this.throwVelocity * 5; // Maximum velocity for far targets
+        const minVelocity = this.rockOptions.throwVelocity; // Base velocity for close targets
+        const maxVelocity = this.rockOptions.throwVelocity * (1 + distance); // Maximum velocity for far targets
         const maxDistance = 15; // Distance at which we reach max velocity
 
         // Linear interpolation between min and max velocity based on distance
@@ -237,7 +255,7 @@ export default class RockThrowController {
         const vel = velocity.clone();
         // REDUCED: Match the reduced gravity from the Rock class
         const gravity = new THREE.Vector3(0, -4.9, 0);
-        // REDUCED: Match the reduced drag from Rock class  
+        // REDUCED: Match the reduced drag from Rock class
         const drag = 0.05;
         const timeStep = 0.1;
 
@@ -323,6 +341,58 @@ export default class RockThrowController {
         } else {
             console.log('Target out of bounds:', targetPoint);
         }
+    }
+
+    updateAllRocksOptions() {
+        // Update all rocks in pool
+        this.rockPool.forEach(rock => {
+            Object.assign(rock.options, this.rockOptions);
+            // Apply texture repeat updates to existing rocks
+            if (rock.mesh && rock.mesh.material) {
+                const textures = rockTypes[rock.options.rockType];
+
+                if (textures.diffuse) {
+                    textures.diffuse.repeat.copy(rock.options.textureRepeat);
+                }
+                if (textures.displacement) {
+                    textures.displacement.repeat.copy(rock.options.textureRepeat);
+                }
+                if (textures.normal) {
+                    textures.normal.repeat.copy(rock.options.textureRepeat);
+                }
+
+                // Update displacement scale
+                rock.mesh.material.displacementScale = rock.options.displacementScale;
+
+                // Flag material for update
+                rock.mesh.material.needsUpdate = true;
+            }
+        });
+
+        // Update all active rocks
+        this.activeRocks.forEach(rock => {
+            Object.assign(rock.options, this.rockOptions);
+
+            if (rock.mesh && rock.mesh.material) {
+                const textures = rockTypes[rock.options.rockType];
+
+                if (textures.diffuse) {
+                    textures.diffuse.repeat.copy(rock.options.textureRepeat);
+                }
+                if (textures.displacement) {
+                    textures.displacement.repeat.copy(rock.options.textureRepeat);
+                }
+                if (textures.normal) {
+                    textures.normal.repeat.copy(rock.options.textureRepeat);
+                }
+
+                // Update displacement scale
+                rock.mesh.material.displacementScale = rock.options.displacementScale;
+
+                // Flag material for update
+                rock.mesh.material.needsUpdate = true;
+            }
+        });
     }
 
     update(deltaTime) {

@@ -4,38 +4,78 @@ import Water from './objects/water';
 import Ground from './objects/ground';
 import RockThrowController from './controllers/rockThrowController';
 import { setupUI } from './ui';
+import { Vector2Uniform } from 'three/src/renderers/common/Uniform.js';
+import { Wireframe } from 'three/examples/jsm/Addons.js';
 
-// Animation
+/* Gravity, size, weight, all should be in real world units M
+ water disturbance should be affected by velocity and mass (force)
+ angular velocity should increase probability of skipping
+ velocity should be affected by skipping angle (flatter skip, less velocity loss)
+*/
+
+// Animation setup: Create a clock to track time and set up water resolution and plane size
 const clock = new THREE.Clock();
-const waterResolution = 256;
-const waterPlaneSize = { width: 2, height: 10 }; // Define size here to pass to Water
+const waterResolution = 384;
+const waterPlaneSize = { width: 4, height: 20 };
+const floorDepth = -2;
 
-// Scene setup
+// Scene setup: Create the scene, camera, and renderer
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.001, 100);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  powerPreference: "high-performance"
+});
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(devicePixelRatio);
+renderer.setPixelRatio(window.devicePixelRatio); // Fixed: Use window.devicePixelRatio
 renderer.toneMapping = THREE.NeutralToneMapping;
-renderer.toneMappingExposure = 1.2; // Lowered exposure
-renderer.shadowMap.enabled = true; // Enable shadow maps
-renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
+renderer.toneMappingExposure = 1.2;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
-// Environment map
+// Environment map setup: Load the environment map to be used for lighting and reflections
 const cubeTextureLoader = new THREE.CubeTextureLoader();
-cubeTextureLoader.setPath('/sunsetEnv/'); // Make sure this path is correct relative to your public folder
-const environmentMapPromise = cubeTextureLoader.loadAsync([ // Use loadAsync
+cubeTextureLoader.setPath('/sunsetEnv/');
+const environmentMapPromise = cubeTextureLoader.loadAsync([
     'px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png'
 ]);
 
+// Set up camera position and controls
+camera.position.set(0, 1.5, -(waterPlaneSize.height || 10) / 2 - 2);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, 1);
+controls.enableDamping = true;
+
+// Set up lighting
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+directionalLight.position.set(-5, 3, -310);
+directionalLight.castShadow = true;
+
+directionalLight.shadow.mapSize.width = 1024;
+directionalLight.shadow.mapSize.height = 1024;
+directionalLight.shadow.camera.near = 0.1;
+directionalLight.shadow.camera.far = 20;
+directionalLight.shadow.camera.left = -waterPlaneSize.width;
+directionalLight.shadow.camera.right = waterPlaneSize.width;
+directionalLight.shadow.camera.top = waterPlaneSize.height;
+directionalLight.shadow.camera.bottom = -waterPlaneSize.height;
+
+scene.add(directionalLight);
+
+// Optional: Add a helper to visualize the shadow camera
+const shadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
+scene.add(shadowHelper);
+
+const lightDirection = new THREE.Vector3();
+lightDirection.copy(directionalLight.position).normalize();
+
 // --- Water Object ---
-// Initialize water variable, will be assigned after env map loads
 let water;
 
 // --- Ground Object ---
-const ground = new Ground({ planeSize: waterPlaneSize }); // Pass size to ground
-ground.receiveShadow = true; // Ground should receive shadows
+const ground = new Ground({ planeSize: waterPlaneSize, floorDepth: floorDepth });
+ground.receiveShadow = true;
 scene.add(ground);
 
 // --- Rock Throw Controller ---
@@ -44,48 +84,51 @@ let rockThrowController;
 // --- Async Initialization ---
 async function initializeScene() {
     try {
+        // Load the environment map and set it as the scene background and environment
         const loadedEnvMap = await environmentMapPromise;
         scene.background = loadedEnvMap;
         scene.environment = loadedEnvMap;
 
-        // Create Water *after* env map is loaded
+        // Create the water object after the environment map is loaded
         water = new Water({
             resolution: waterResolution,
             envMap: loadedEnvMap,
-            planeSize: waterPlaneSize // Pass plane size
+            planeSize: waterPlaneSize,
+            floorDepth: floorDepth,
+            lightDirection: lightDirection,
         });
-        water.castShadow = true; // Water surface can cast shadows (optional, might be expensive)
+        water.castShadow = true;
         scene.add(water);
 
-        // Initialize Rock Throw Controller after water is created
+        // Initialize the rock throw controller after the water object is created
         rockThrowController = new RockThrowController({
             scene: scene,
             camera: camera,
             water: water,
             waterPlaneSize: waterPlaneSize,
             domElement: renderer.domElement,
-            throwVelocity: 10.0
+            throwVelocity: 10.0,
+            skipAngleThreshold: 17,
+            floorDepth: floorDepth,
+            envMap: loadedEnvMap,
         });
 
-        // Setup UI after water and ground are created (without rock controller)
+        // Setup the UI after the water and ground objects are created
         setupUI({ waterResolution, water, ground, rockThrowController });
-
-
-        // Show instructions
         showInstructions();
-
-        // Start animation loop only after everything is loaded
         animate();
 
     } catch (error) {
         console.error('Failed to initialize scene:', error);
         // Fallback background color if env map fails
-        scene.background = new THREE.Color(0x87ceeb);
+        scene.background = new THREE.Color(0x87ceeb); // sky blue
         // Optionally create water with null envMap or handle error differently
         water = new Water({
             resolution: waterResolution,
-            envMap: null, // Or a default texture
-            planeSize: waterPlaneSize
+            envMap: null,
+            planeSize: waterPlaneSize,
+            floorDepth: floorDepth,
+            lightDirection: lightDirection,
         });
         scene.add(water);
 
@@ -96,17 +139,15 @@ async function initializeScene() {
             water: water,
             waterPlaneSize: waterPlaneSize,
             domElement: renderer.domElement,
-            throwVelocity: 5.0
+            throwVelocity: 10.0,
+            skipAngleThreshold: 17,
+            floorDepth: floorDepth,
         });
 
-        // Ensure ground is passed to setupUI even in error case if needed
+        // still setup UI even though some wont be functional
         setupUI({ waterResolution, water, ground, rockThrowController });
-
-
-        // Show instructions
         showInstructions();
-
-        animate(); // Still start animation
+        animate();
     }
 }
 
@@ -122,49 +163,30 @@ function showInstructions() {
     instructions.style.borderRadius = '5px';
     instructions.style.fontFamily = 'Arial, sans-serif';
     instructions.style.fontSize = '14px';
-    instructions.style.pointerEvents = 'none'; // Don't interfere with mouse events
+    instructions.style.pointerEvents = 'none';
 
     instructions.innerHTML = `
-        <h3 style="margin: 0 0 10px 0">Rock Skipping Simulation</h3>
-        <p style="margin: 5px 0">Move your mouse to aim at the water</p>
-        <p style="margin: 5px 0">Press SPACEBAR to throw a rock</p>
-        <p style="margin: 5px 0">Use mouse to rotate camera</p>
-        <p style="margin: 5px 0">Scroll to zoom in/out</p>
+        <h3 style="margin: 0 0 10px 0; text-align: center;">Rock Skipping Simulation</h3>
+        <ul style="margin: 0; padding-left: 20px;">
+            <li>Move your mouse to aim at the water</li>
+            <li>Press SPACEBAR to throw a rock</li>
+            <li>Left Click to rotate camera</li>
+            <li>Scroll to zoom in/out</li>
+            <li>Right Click to pan around</li>
+        </ul>
     `;
 
     document.body.appendChild(instructions);
 }
 
-// Camera position
-camera.position.set(0, 1.5, -6.8); // Adjusted camera for better view
-// Controls
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 0, 1); // Point controls towards the water center
-controls.enableDamping = true;
 
-// Strong Directional Light (Sun)
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5); // Lowered intensity
-directionalLight.position.set(2, 5, 3); // Adjust position/direction
-directionalLight.castShadow = true; // Enable shadow casting
-
-// Configure shadow properties
-directionalLight.shadow.mapSize.width = 1024; // Shadow map resolution
-directionalLight.shadow.mapSize.height = 1024;
-directionalLight.shadow.camera.near = 0.1;
-directionalLight.shadow.camera.far = 20;
-// Adjust shadow camera frustum to cover the area of interest
-directionalLight.shadow.camera.left = -waterPlaneSize.width;
-directionalLight.shadow.camera.right = waterPlaneSize.width;
-directionalLight.shadow.camera.top = waterPlaneSize.height;
-directionalLight.shadow.camera.bottom = -waterPlaneSize.height;
-
-scene.add(directionalLight);
 
 let lastTime = 0;
-const lightDirection = new THREE.Vector3(); // Reusable vector
 
+
+// Animation loop
 function animate() {
-    requestAnimationFrame(animate); // Request next frame first
+    requestAnimationFrame(animate);
 
     const elapsedTime = clock.getElapsedTime();
     const deltaTime = elapsedTime - lastTime;
@@ -176,47 +198,49 @@ function animate() {
     if (water) { // Check if water exists
         // 1. Simulate water surface
         water.simulate(renderer, deltaTime);
-        renderer.state.reset(); // Reset state after simulation render pass
+        renderer.state.reset();
 
         // 2. Update light direction for caustics
         // Get world direction of light
         lightDirection.copy(directionalLight.position).normalize();
-        // If light has a target: lightDirection.subVectors(directionalLight.position, directionalLight.target.position).normalize();
         water.causticsMaterial.uniforms.uLightDirection.value.copy(lightDirection);
 
         // 3. Render caustics map based on simulation and light
         water.renderCaustics(renderer);
-        renderer.state.reset(); // Reset state after caustics render pass
+        renderer.state.reset();
 
-        // 4. Update water appearance (time, heightmap)
         water.update(elapsedTime);
 
-        // 5. Update ground material with the generated caustics map
         if (ground) {
             ground.material.uniforms.uCausticsMap.value = water.getCausticsTexture();
         }
     }
-    // --- End Simulation & Caustics Update ---
 
-    if (ground) { // Check if ground exists
-        ground.update(elapsedTime); // Update ground time uniform if needed
+    if (ground) {
+        ground.update(elapsedTime);
     }
 
-    // Update rock throwing physics if controller exists
     if (rockThrowController) {
         rockThrowController.update(deltaTime);
     }
 
-    renderer.render(scene, camera); // Render main scene
+    renderer.render(scene, camera);
 }
 
-// Handle resize
+// Handle window resize
 window.addEventListener('resize', () => {
+    // Update camera aspect ratio
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    // Note: Render targets in Water class don't need resizing here
+
+    // Update renderer size to match window exactly
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+
+    // Update water resolution if needed
+    if (water && water.updateResolution) {
+        water.updateResolution();
+    }
 });
 
-// Start initialization
+// Initialize the scene
 initializeScene();
